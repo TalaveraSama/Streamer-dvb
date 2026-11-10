@@ -83,6 +83,9 @@ REQUIRED_PACKAGES=(
     libboost-system-dev
     libboost-thread-dev
     libpcsclite-dev
+    # Pulled in by libgstreamer1.0-dev on jammy (22.04); listed explicitly so the
+    # availability check and the reconciliation below cover it.
+    libunwind-dev
 )
 
 # Required to run the panel with the protocols the UI exposes.
@@ -183,6 +186,23 @@ for package in "${REQUIRED_PACKAGES[@]}" "${RUNTIME_PACKAGES[@]}"; do
         MISSING_REQUIRED+=("$package")
     fi
 done
+
+# 203.76: on jammy, libgstreamer1.0-dev depends on libunwind-dev, which pins
+# libunwind8 to the exact archive version. Cloud/CI images often ship a newer
+# libunwind8 for other tooling, and apt then refuses the whole transaction with
+# "held broken packages" without naming the real culprit. Align libunwind first.
+reconcile_libunwind() {
+    if ! package_available libunwind-dev; then
+        return 0
+    fi
+    if "${APT_GET[@]}" install -y --no-install-recommends libunwind-dev >/dev/null 2>&1; then
+        return 0
+    fi
+    echo "libunwind-dev needs a different libunwind8; retrying with --allow-downgrades"
+    "${APT_GET[@]}" install -y --no-install-recommends --allow-downgrades libunwind-dev \
+        || echo "Warning: could not reconcile libunwind; the build may fail." >&2
+}
+reconcile_libunwind
 
 echo "Resolved: required+runtime=${#TO_INSTALL[@]} available, missing=${#MISSING_REQUIRED[@]}"
 if [[ "${#MISSING_REQUIRED[@]}" -ne 0 ]]; then
