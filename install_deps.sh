@@ -28,6 +28,14 @@ done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# In CI the job log is not always readable, but check annotations are. Emit the
+# diagnostics that matter as single-line workflow commands (no-op elsewhere).
+annotate() {
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        echo "::error title=install_deps::$(printf '%s' "$*" | tr '\n' ' ' | cut -c1-900)"
+    fi
+}
+
 # --- release detection -------------------------------------------------------
 DISTRO_ID="unknown"
 DISTRO_VERSION="unknown"
@@ -75,6 +83,9 @@ REQUIRED_PACKAGES=(
     libboost-system-dev
     libboost-thread-dev
     libpcsclite-dev
+    # Pulled in by libgstreamer1.0-dev on jammy (22.04); listed explicitly so the
+    # availability check and the reconciliation below cover it.
+    libunwind-dev
 )
 
 # Required to run the panel with the protocols the UI exposes.
@@ -158,7 +169,9 @@ if [[ "$MODE" == "check" ]]; then
 fi
 
 # --- install mode ------------------------------------------------------------
-APT_GET=("${SUDO[@]}" apt-get)
+# DPkg::Lock::Timeout: unattended-upgrades can hold the dpkg lock on cloud
+# images and make `apt-get install` fail with exit code 100.
+APT_GET=("${SUDO[@]}" apt-get -o DPkg::Lock::Timeout=180)
 export DEBIAN_FRONTEND=noninteractive
 
 echo "Installing TVStreammerSAT5 dependencies on $DISTRO_ID $DISTRO_VERSION..."
@@ -174,27 +187,73 @@ for package in "${REQUIRED_PACKAGES[@]}" "${RUNTIME_PACKAGES[@]}"; do
     fi
 done
 
-SKIPPED_OPTIONAL=()
-for package in "${OPTIONAL_PACKAGES[@]}"; do
-    if package_available "$package"; then
-        TO_INSTALL+=("$package")
-    else
-        SKIPPED_OPTIONAL+=("$package")
+# 203.76: on jammy, libgstreamer1.0-dev depends on libunwind-dev, which pins
+# libunwind8 to the exact archive version. Cloud/CI images often ship a newer
+# libunwind8 for other tooling, and apt then refuses the whole transaction with
+# "held broken packages" without naming the real culprit. Align libunwind first.
+reconcile_libunwind() {
+    if ! package_available libunwind-dev; then
+        return 0
     fi
-done
+    if "${APT_GET[@]}" install -y --no-install-recommends libunwind-dev >/dev/null 2>&1; then
+        return 0
+    fi
+    echo "libunwind-dev needs a different libunwind8; retrying with --allow-downgrades"
+    "${APT_GET[@]}" install -y --no-install-recommends --allow-downgrades libunwind-dev \
+        || echo "Warning: could not reconcile libunwind; the build may fail." >&2
+}
+reconcile_libunwind
 
+echo "Resolved: required+runtime=${#TO_INSTALL[@]} available, missing=${#MISSING_REQUIRED[@]}"
 if [[ "${#MISSING_REQUIRED[@]}" -ne 0 ]]; then
+    annotate "missing required packages on ${DISTRO_ID} ${DISTRO_VERSION}: ${MISSING_REQUIRED[*]}"
+    # Printed on stdout as well: stdout is flushed at exit, so CI logs always end
+    # with the reason instead of burying it between apt progress lines.
+    echo "MISSING_REQUIRED_PACKAGES: ${MISSING_REQUIRED[*]}"
     echo "These required packages are not available on $DISTRO_ID $DISTRO_VERSION:" >&2
     printf '  - %s\n' "${MISSING_REQUIRED[@]}" >&2
     echo "Enable the 'universe' component (sudo add-apt-repository universe) and retry." >&2
     exit 1
 fi
 
+echo "Required packages (${#TO_INSTALL[@]}): ${TO_INSTALL[*]}"
+if ! "${APT_GET[@]}" install -y --no-install-recommends "${TO_INSTALL[@]}"; then
+    # Re-run the simulation to capture the dependency conflict in a compact form
+    # that survives log truncation, and surface it as a CI annotation.
+    echo "APT_INSTALL_FAILED: the required package set could not be installed."
+    simulation="$("${APT_GET[@]}" -s install "${TO_INSTALL[@]}" 2>&1 \
+        | grep -E "Depends:|Conflicts:|Breaks:|E:" | head -8 || true)"
+    printf '%s\n' "${simulation}"
+    annotate "apt simulate failed: ${simulation}"
+    annotate "attempted set: ${TO_INSTALL[*]}"
+    exit 1
+fi
+
+# Optional packages are installed in a second, non-fatal pass: a broken
+# dependency or a conflict between VA-API/NVENC extras on one release must not
+# abort an otherwise valid installation.
+OPTIONAL_AVAILABLE=()
+SKIPPED_OPTIONAL=()
+for package in "${OPTIONAL_PACKAGES[@]}"; do
+    if package_available "$package"; then
+        OPTIONAL_AVAILABLE+=("$package")
+    else
+        SKIPPED_OPTIONAL+=("$package")
+    fi
+done
+
 if [[ "${#SKIPPED_OPTIONAL[@]}" -ne 0 ]]; then
     echo "Optional packages not available on this release (skipped): ${SKIPPED_OPTIONAL[*]}"
 fi
+if [[ "${#OPTIONAL_AVAILABLE[@]}" -ne 0 ]]; then
+    echo "Optional packages (${#OPTIONAL_AVAILABLE[@]}): ${OPTIONAL_AVAILABLE[*]}"
+    if ! "${APT_GET[@]}" install -y --no-install-recommends "${OPTIONAL_AVAILABLE[@]}"; then
+        echo "Warning: these optional packages could not be installed: ${OPTIONAL_AVAILABLE[*]}" >&2
+        echo "         The build does not require them; hardware acceleration or" >&2
+        echo "         smart-card tooling will be unavailable." >&2
+    fi
+fi
 
-"${APT_GET[@]}" install -y --no-install-recommends "${TO_INSTALL[@]}"
 "${APT_GET[@]}" clean
 
 if [[ -x "${ROOT_DIR}/scripts/check_transcoder_plugins.sh" ]]; then

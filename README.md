@@ -1,8 +1,8 @@
 # TVStreammerSAT5
 
-**Версия: 203.76**
+**Версия: 203.77**
 
-> **203.76 — baseline de seguridad.** El panel ya no se instala con `admin/admin`:
+> **203.77 — baseline de seguridad.** El panel ya no se instala con `admin/admin`:
 > en el primer arranque se genera una contraseña aleatoria y se imprime una vez en
 > el log del servicio. Las peticiones de estado se validan contra el mismo origen
 > (anti-CSRF), la autenticación tiene bloqueo por intentos y el cuerpo de petición
