@@ -57,10 +57,11 @@ jobs:
         run: |
           log="${RUNNER_TEMP}/install_deps.log"
           [ -f "$log" ] || { echo "::error::install_deps.sh produced no log"; exit 0; }
-          grep -nE "^(E:|W:|Err:|dpkg:|Some packages|These required|apt-get install failed)" "$log" \
-            | head -20 | while IFS= read -r line; do
-                echo "::error file=install_deps.sh::${line}"
-              done
+          # apt explains a dependency conflict in the lines around the "E:" one,
+          # so the whole tail is surfaced, not just the matching prefixes.
+          tail -n 30 "$log" | while IFS= read -r line; do
+            echo "::error file=install_deps.sh::${line}"
+          done
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
