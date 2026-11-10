@@ -59,9 +59,19 @@ jobs:
           [ -f "$log" ] || { echo "::error::install_deps.sh produced no log"; exit 0; }
           # apt explains a dependency conflict in the lines around the "E:" one,
           # so the whole tail is surfaced, not just the matching prefixes.
-          tail -n 30 "$log" | while IFS= read -r line; do
+          tail -n 15 "$log" | while IFS= read -r line; do
             echo "::error file=install_deps.sh::${line}"
           done
+
+      # The raw job log is not reachable from every environment; the artifact is.
+      - name: Upload dependency log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-deps-${{ matrix.os }}
+          path: ${{ runner.temp }}/install_deps.log
+          if-no-files-found: warn
+          retention-days: 5
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo

@@ -177,6 +177,9 @@ for package in "${REQUIRED_PACKAGES[@]}" "${RUNTIME_PACKAGES[@]}"; do
 done
 
 if [[ "${#MISSING_REQUIRED[@]}" -ne 0 ]]; then
+    # Printed on stdout as well: stdout is flushed at exit, so CI logs always end
+    # with the reason instead of burying it between apt progress lines.
+    echo "MISSING_REQUIRED_PACKAGES: ${MISSING_REQUIRED[*]}"
     echo "These required packages are not available on $DISTRO_ID $DISTRO_VERSION:" >&2
     printf '  - %s\n' "${MISSING_REQUIRED[@]}" >&2
     echo "Enable the 'universe' component (sudo add-apt-repository universe) and retry." >&2
@@ -185,7 +188,11 @@ fi
 
 echo "Required packages (${#TO_INSTALL[@]}): ${TO_INSTALL[*]}"
 if ! "${APT_GET[@]}" install -y --no-install-recommends "${TO_INSTALL[@]}"; then
-    echo "apt-get install failed for the required package set." >&2
+    # Re-run the simulation to capture the dependency conflict in a compact,
+    # greppable form that survives log truncation.
+    echo "APT_INSTALL_FAILED: the required package set could not be installed."
+    "${APT_GET[@]}" -s install "${TO_INSTALL[@]}" 2>&1 \
+        | grep -E "Depends:|Conflicts:|Breaks:|E:" | head -15 || true
     exit 1
 fi
 
