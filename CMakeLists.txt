@@ -4,6 +4,17 @@ project(TVStreammerSAT5 CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# 203.76: opt-in compiler warnings and a real CTest entry point. Both are ON by
+# default so CI catches new warnings and the unit tests are always registered.
+option(TVSTREAMMERSAT5_WARNINGS "Build with -Wall -Wextra" ON)
+option(TVSTREAMMERSAT5_BUILD_TESTS "Build the C++ unit tests and register them with CTest" ON)
+
+function(tvstreammersat5_apply_warnings target)
+    if(TVSTREAMMERSAT5_WARNINGS)
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wno-unused-parameter)
+    endif()
+endfunction()
+
 find_package(PkgConfig REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_library(CRYPT_LIBRARY crypt)
@@ -113,6 +124,28 @@ target_link_libraries(TVStreammerSAT5
 )
 
 
+if(TVSTREAMMERSAT5_BUILD_TESTS)
+    enable_testing()
+    # 203.76: the three behavioural tests that already existed in tests/ were
+    # never compiled by any build; now they run under ctest.
+    add_executable(tvstreammersat5_test_http_origin tests/test_http_origin_20376.cpp)
+    target_include_directories(tvstreammersat5_test_http_origin PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    tvstreammersat5_apply_warnings(tvstreammersat5_test_http_origin)
+    add_test(NAME http_origin_policy COMMAND tvstreammersat5_test_http_origin)
+
+    add_executable(tvstreammersat5_test_ts_media_progress tests/test_ts_media_progress_20369.cpp)
+    tvstreammersat5_apply_warnings(tvstreammersat5_test_ts_media_progress)
+    add_test(NAME ts_media_progress COMMAND tvstreammersat5_test_ts_media_progress)
+
+    add_executable(tvstreammersat5_test_udp_media_delivery tests/test_udp_media_delivery_20370.cpp)
+    tvstreammersat5_apply_warnings(tvstreammersat5_test_udp_media_delivery)
+    add_test(NAME udp_media_delivery COMMAND tvstreammersat5_test_udp_media_delivery)
+
+    add_executable(tvstreammersat5_test_sd_widescreen tests/test_sd_widescreen_20371.cpp)
+    tvstreammersat5_apply_warnings(tvstreammersat5_test_sd_widescreen)
+    add_test(NAME sd_widescreen_geometry COMMAND tvstreammersat5_test_sd_widescreen)
+endif()
+
 option(TVSTREAMMERSAT5_BUILD_CA_PLUGIN_EXAMPLE "Build non-decoding CaBackend ABI example plugin" OFF)
 if(TVSTREAMMERSAT5_BUILD_CA_PLUGIN_EXAMPLE)
     add_library(tvstreammersat5_ca_passthrough_example SHARED
@@ -145,6 +178,9 @@ set_target_properties(tvstreammersat5_ca_newcamd PROPERTIES
     PREFIX ""
     OUTPUT_NAME "tvstreammersat5-ca-newcamd"
 )
+tvstreammersat5_apply_warnings(TVStreammerSAT5)
+tvstreammersat5_apply_warnings(tvstreammersat5_ca_newcamd)
+
 install(TARGETS TVStreammerSAT5 RUNTIME DESTINATION bin)
 install(TARGETS tvstreammersat5_ca_newcamd LIBRARY DESTINATION /opt/tvstreammersat5/ca-plugins)
 

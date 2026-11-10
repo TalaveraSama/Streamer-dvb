@@ -52,6 +52,12 @@ private:
     void handleSession(tcp::socket socket);
     bool requiresAuthentication(const std::string& target) const;
     bool isAuthorized(const http::request<http::string_body>& req) const;
+    // 203.76: security helpers (see the implementation for the rationale).
+    void applySecurityHeaders(http::response<http::string_body>& res) const;
+    bool isLoginRateLimited(const std::string& clientIp);
+    void recordAuthFailure(const std::string& clientIp);
+    void clearAuthFailures(const std::string& clientIp);
+    tcp::endpoint bindEndpointFor(int port) const;
     bool isStreamClientAllowed(const tcp::socket& socket, const std::string& target) const;
     bool isClientAllowedForStream(const std::string& streamId, const std::string& clientIp) const;
     void writeUnauthorized(http::response<http::string_body>& res) const;
@@ -94,6 +100,13 @@ private:
     std::atomic<uint64_t> acceptGeneration{0};
     ConfigManager& configManager;
     StreamManager& streamManager;
+    struct AuthFailureState {
+        int failures = 0;
+        std::chrono::steady_clock::time_point firstFailure{};
+        std::chrono::steady_clock::time_point lockedUntil{};
+    };
+    std::mutex authFailureMutex;
+    std::unordered_map<std::string, AuthFailureState> authFailures;
     std::mutex qualityMutex;
     std::mutex metricsMutex;
     uint64_t previousCpuTotal = 0;

@@ -1,13 +1,18 @@
 const fs = require('fs');
 const assert = require('assert');
+const { readFile, readProgramVersion } = require('./lib/version');
 
-const http = fs.readFileSync('src/HttpServer.cpp', 'utf8');
-const version = fs.readFileSync('src/AppVersion.h', 'utf8');
+const http = readFile('src/HttpServer.cpp');
 
-assert.match(version, /kProgramVersion\s*=\s*"203\.73"/,
-  'numeric version must stay 203.73');
-assert.match(http, /state\.program_version\|\|'203\.73'.*language === 'en' \? ' EN' : ''/s,
+// 203.76: the display fallback must come from the server-injected version, not
+// from a hard-coded literal that drifts on every release.
+readProgramVersion();
+assert.match(http, /window\.__TVS_VERSION="__TVS_PROGRAM_VERSION__"/,
+  'the page must bootstrap window.__TVS_VERSION');
+assert.match(http, /state\.program_version\|\|window\.__TVS_VERSION.*language === 'en' \? ' EN' : ''/s,
   'English UI must append EN only to displayed version');
+assert.ok(!/state\.program_version\|\|'\d{3}\.\d{2}'/.test(http),
+  'the About dialog must not hard-code a version fallback');
 
 for (const pair of [
   ["'Интерфейс вывода', 'Output interface'", 'output interface'],
@@ -36,4 +41,4 @@ assert.ok(scriptStart > 0 && scriptEnd > scriptStart, 'inline script not found')
 const script = http.slice(scriptStart, scriptEnd);
 new Function(script); // syntax-only compile; does not execute DOM code.
 
-console.log('PASS: 203.73 English UI runtime localization and display-only EN suffix');
+console.log('PASS: English UI runtime localization and display-only EN suffix');

@@ -8,3 +8,10 @@ tvstreammersat5-subscribers.json
 backup-files/
 .vscode/
 *.log
+
+# 203.76: build and tooling artefacts that must never be tracked.
+__pycache__/
+*.pyc
+build-*/
+.cache/
+compile_commands.json

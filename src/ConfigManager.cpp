@@ -38,6 +38,55 @@ void normalizeOutputEndpoint(std::string& outputHost, int& outputPort, const std
 }
 
 constexpr const char* kUiPasswordPrefix = "enc:v1:";
+
+// 203.76: initial credentials are generated instead of shipped. 20 characters
+// drawn from a 57-symbol alphabet give ~116 bits of entropy in a string that is
+// easy to copy from the service log.
+std::string generateInitialPassword() {
+    static const char kAlphabet[] =
+        "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    constexpr std::size_t kAlphabetSize = sizeof(kAlphabet) - 1;
+    constexpr std::size_t kPasswordLength = 20;
+    // 228 == 4 * 57, the largest multiple of the alphabet size below 256.
+    constexpr unsigned kRejectionThreshold = 228;
+
+    std::array<unsigned char, 32> randomBytes{};
+    std::size_t byteIndex = randomBytes.size();
+
+    auto nextByte = [&randomBytes, &byteIndex]() -> int {
+        if (byteIndex >= randomBytes.size()) {
+            if (RAND_bytes(randomBytes.data(), static_cast<int>(randomBytes.size())) != 1) {
+                return -1;
+            }
+            byteIndex = 0;
+        }
+        return static_cast<int>(randomBytes[byteIndex++]);
+    };
+
+    std::string password;
+    password.reserve(kPasswordLength);
+    while (password.size() < kPasswordLength) {
+        const int value = nextByte();
+        if (value < 0) {
+            std::cerr << "Unable to generate an initial password with OpenSSL RAND_bytes" << std::endl;
+            return std::string();
+        }
+        // Rejection sampling keeps the alphabet uniform; a fresh byte is drawn
+        // instead of folding the out-of-range value back into range.
+        if (value >= static_cast<int>(kRejectionThreshold)) {
+            continue;
+        }
+        password.push_back(kAlphabet[static_cast<std::size_t>(value) % kAlphabetSize]);
+    }
+    return password;
+}
+
+int clampRequestBodyMb(int value) {
+    if (value < 8) return 8;
+    if (value > 512) return 512;
+    return value;
+}
+
 constexpr size_t kUiPasswordKeyBytes = 32;
 constexpr size_t kUiPasswordNonceBytes = 12;
 constexpr size_t kUiPasswordTagBytes = 16;
@@ -531,6 +580,9 @@ Json::Value AppConfig::toJson() const {
     root["password"] = password;
     root["server_name"] = serverName;
     root["http_port"] = httpPort;
+    root["bind_address"] = bindAddress;
+    root["require_stream_auth"] = requireStreamAuth;
+    root["max_request_body_mb"] = maxRequestBodyMb;
     root["language"] = language;
     root["telegram_token"] = telegramToken;
     root["telegram_chat_id"] = telegramChatId;
@@ -555,6 +607,12 @@ AppConfig AppConfig::fromJson(const Json::Value& root) {
     config.password = root.get("password", "admin").asString();
     config.serverName = root.get("server_name", "TVStreammerSAT5").asString();
     config.httpPort = root.get("http_port", 9000).asInt();
+    config.bindAddress = root.get("bind_address", "0.0.0.0").asString();
+    if (config.bindAddress.empty()) {
+        config.bindAddress = "0.0.0.0";
+    }
+    config.requireStreamAuth = root.get("require_stream_auth", false).asBool();
+    config.maxRequestBodyMb = clampRequestBodyMb(root.get("max_request_body_mb", 64).asInt());
     config.language = root.get("language", "en").asString();
     if (config.language != "ru" && config.language != "en") {
         config.language = "en";
@@ -653,11 +711,22 @@ bool ConfigManager::load() {
     if (!std::filesystem::exists(configPath)) {
         std::cerr << "Config file not found, creating default configuration: " << configPath << std::endl;
         AppConfig defaultConfig;
+        defaultConfig.password = generateInitialPassword();
+        if (defaultConfig.password.empty()) {
+            std::cerr << "Refusing to create a configuration without a usable password" << std::endl;
+            return false;
+        }
         {
             std::lock_guard<std::mutex> lock(fileMutex);
             config = defaultConfig;
         }
         if (!save()) return false;
+        std::cerr << "======================================================================" << std::endl;
+        std::cerr << "TVStreammerSAT5 first start: generated credentials" << std::endl;
+        std::cerr << "  login:    " << defaultConfig.login << std::endl;
+        std::cerr << "  password: " << defaultConfig.password << std::endl;
+        std::cerr << "Store it now and change it in the panel. It is not shown again." << std::endl;
+        std::cerr << "======================================================================" << std::endl;
         return loadSubscribers();
     }
 

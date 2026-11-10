@@ -8,6 +8,7 @@
 #include "CardManager.h"
 #include "OscamMiniManager.h"
 #include "protocols/GstProtocolTypes.h"
+#include "HttpOriginPolicy.h"
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -62,6 +63,51 @@ constexpr std::size_t kQualityMaxSamplesPerStream = 10000;
 // streaming queues stayed bounded. Reuse a fixed worker pool instead.
 constexpr std::size_t kHttpSessionWorkers = 24;
 constexpr uint32_t kMaxQueuedHttpSessions = 256;
+
+// 203.76: the request-body ceiling used to be a hard-coded 512 MiB for every
+// route, so one POST could exhaust the process memory before any handler ran.
+// It is now configurable, clamped, and reported as 413 instead of a dropped
+// connection.
+constexpr int kDefaultMaxRequestBodyMb = 64;
+constexpr int kMinMaxRequestBodyMb = 8;
+constexpr int kMaxMaxRequestBodyMb = 512;
+
+// 203.76: brute-force protection for the panel credentials.
+constexpr int kAuthFailureLimit = 8;
+constexpr std::chrono::minutes kAuthFailureWindow{15};
+constexpr std::chrono::minutes kAuthLockoutDuration{5};
+
+int clampRequestBodyMb(int value) {
+    if (value <= 0) return kDefaultMaxRequestBodyMb;
+    if (value < kMinMaxRequestBodyMb) return kMinMaxRequestBodyMb;
+    if (value > kMaxMaxRequestBodyMb) return kMaxMaxRequestBodyMb;
+    return value;
+}
+
+std::string peerAddress(const tcp::socket& socket) {
+    boost::system::error_code ec;
+    const auto endpoint = socket.remote_endpoint(ec);
+    if (ec) {
+        return std::string();
+    }
+    return endpoint.address().to_string();
+}
+
+// 203.76: the same-origin rules live in src/HttpOriginPolicy.h so they can be
+// unit tested without Boost.Beast; this adapter only extracts the headers.
+bool requestComesFromAnotherOrigin(const http::request<http::string_body>& req) {
+    const auto host = req.find(http::field::host);
+    if (host == req.end()) {
+        return false;
+    }
+    const auto origin = req.find(http::field::origin);
+    const auto referer = req.find(http::field::referer);
+    const auto verdict = tvs::http_security::evaluate(
+        std::string(host->value()),
+        origin == req.end() ? std::string() : std::string(origin->value()),
+        referer == req.end() ? std::string() : std::string(referer->value()));
+    return verdict.sourcePresent && !verdict.allowed;
+}
 
 struct CaDecodeUiMemory {
     std::string state;
@@ -764,7 +810,9 @@ void HttpServer::handleSession(tcp::socket socket) {
     try {
         boost::beast::flat_buffer buffer;
         http::request_parser<http::string_body> parser;
-        parser.body_limit(512ULL * 1024ULL * 1024ULL);
+        parser.body_limit(
+            static_cast<std::uint64_t>(clampRequestBodyMb(configManager.config.maxRequestBodyMb)) *
+            1024ULL * 1024ULL);
         http::read(socket, buffer, parser);
         http::request<http::string_body> req = parser.release();
         http::response<http::string_body> res{http::status::ok, req.version()};
@@ -772,6 +820,7 @@ void HttpServer::handleSession(tcp::socket socket) {
         res.set(http::field::content_type, "text/html; charset=UTF-8");
         res.set(http::field::cache_control, "no-store");
         res.set(http::field::pragma, "no-cache");
+        applySecurityHeaders(res);
         // One accepted socket is handled for exactly one HTTP request in this
         // implementation. Advertising keep-alive while closing the socket after
         // the response makes HLS clients reuse a connection that no longer has a
@@ -779,8 +828,39 @@ void HttpServer::handleSession(tcp::socket socket) {
         res.keep_alive(false);
 
         const std::string target(req.target());
-        if (requiresAuthentication(target) && !isAuthorized(req)) {
-            writeUnauthorized(res);
+        const std::string clientIp = peerAddress(socket);
+
+        if (requiresAuthentication(target)) {
+            if (isLoginRateLimited(clientIp)) {
+                std::cerr << "HTTP authentication locked out: ip=" << clientIp
+                          << " target=" << target << std::endl;
+                res.result(http::status::too_many_requests);
+                res.set(http::field::retry_after, "60");
+                res.set(http::field::content_type, "text/plain; charset=UTF-8");
+                res.body() = "Too many failed authentication attempts. Try again later.";
+                res.content_length(res.body().size());
+                http::write(socket, res);
+                return;
+            }
+            if (!isAuthorized(req)) {
+                recordAuthFailure(clientIp);
+                writeUnauthorized(res);
+                res.content_length(res.body().size());
+                http::write(socket, res);
+                return;
+            }
+            clearAuthFailures(clientIp);
+        }
+
+        if (req.method() != http::verb::get && req.method() != http::verb::head &&
+            requestComesFromAnotherOrigin(req)) {
+            std::cerr << "HTTP cross-site request rejected: ip=" << clientIp
+                      << " target=" << target
+                      << " hint=preserve-the-Host-header-in-your-reverse-proxy"
+                      << std::endl;
+            res.result(http::status::forbidden);
+            res.set(http::field::content_type, "text/plain; charset=UTF-8");
+            res.body() = "Cross-site request rejected";
             res.content_length(res.body().size());
             http::write(socket, res);
             return;
@@ -1004,7 +1084,8 @@ void HttpServer::handleSession(tcp::socket socket) {
                     stateBypassEnv && *stateBypassEnv && std::strcmp(stateBypassEnv, "0") != 0;
                 std::string stateBody;
                 if (stateBypass) {
-                    stateBody = R"({"diagnostic_state_bypass":true,"program_version":"202.68"})";
+                    stateBody = std::string("{\"diagnostic_state_bypass\":true,\"program_version\":\"") +
+                        kProgramVersion + "\"}";
                 } else {
                     stateBody = currentState();
                 }
@@ -1129,6 +1210,31 @@ void HttpServer::handleSession(tcp::socket socket) {
 
         res.content_length(res.body().size());
         http::write(socket, res);
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == http::error::body_limit) {
+            std::cerr << "HTTP request body rejected: limit="
+                      << clampRequestBodyMb(configManager.config.maxRequestBodyMb) << " MiB" << std::endl;
+            try {
+                http::response<http::string_body> res{http::status::payload_too_large, 11};
+                res.set(http::field::server, "TVStreammerSAT5");
+                res.set(http::field::content_type, "text/plain; charset=UTF-8");
+                res.set(http::field::connection, "close");
+                applySecurityHeaders(res);
+                res.body() = "Request body too large";
+                res.content_length(res.body().size());
+                boost::system::error_code writeEc;
+                http::write(socket, res, writeEc);
+            } catch (...) {
+                // The peer may already be gone; nothing else to do.
+            }
+            return;
+        }
+        const std::string message = ex.what();
+        if (message.find("bad method") != std::string::npos) {
+            std::cerr << "HTTP non-HTTP request ignored on web port: " << message << std::endl;
+        } else {
+            std::cerr << "HTTP session failed: " << message << std::endl;
+        }
     } catch (const std::exception& ex) {
         const std::string message = ex.what();
         if (message.find("bad method") != std::string::npos) {
@@ -1147,9 +1253,15 @@ bool HttpServer::requiresAuthentication(const std::string& target) const {
     const bool hlsTarget = resolveHlsTarget(configManager.config.streams, target, hlsId, hlsFile);
     std::string httpMpegTsId;
     const bool httpMpegTsTarget = resolveHttpMpegTsTarget(configManager.config.streams, target, httpMpegTsId);
+    const bool mediaTarget = hlsTarget || httpMpegTsTarget;
+    // 203.76: player URLs stay unauthenticated for backwards compatibility
+    // (Subscriber IP filtering still applies), but an operator can require the
+    // panel credentials on them with require_stream_auth.
+    if (mediaTarget && configManager.config.requireStreamAuth) {
+        return true;
+    }
     return target != "/health" &&
-           !httpMpegTsTarget &&
-           !hlsTarget;
+           !mediaTarget;
 }
 
 bool HttpServer::isAuthorized(const http::request<http::string_body>& req) const {
@@ -1220,7 +1332,76 @@ void HttpServer::writeUnauthorized(http::response<http::string_body>& res) const
     res.result(http::status::unauthorized);
     res.set(http::field::www_authenticate, "Basic realm=\"TVStreammerSAT5\"");
     res.set(http::field::content_type, "text/plain; charset=UTF-8");
+    res.set(http::field::cache_control, "no-store");
     res.body() = "Unauthorized";
+}
+
+// 203.76: baseline response hardening for every route (panel, API and media).
+void HttpServer::applySecurityHeaders(http::response<http::string_body>& res) const {
+    res.set("X-Content-Type-Options", "nosniff");
+    res.set("X-Frame-Options", "SAMEORIGIN");
+    res.set("Referrer-Policy", "same-origin");
+    res.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+}
+
+bool HttpServer::isLoginRateLimited(const std::string& clientIp) {
+    if (clientIp.empty()) {
+        return false;
+    }
+    std::lock_guard<std::mutex> lock(authFailureMutex);
+    const auto now = std::chrono::steady_clock::now();
+    const auto it = authFailures.find(clientIp);
+    if (it == authFailures.end()) {
+        return false;
+    }
+    if (it->second.lockedUntil > now) {
+        return true;
+    }
+    if (it->second.failures >= kAuthFailureLimit) {
+        authFailures.erase(it);
+    }
+    return false;
+}
+
+void HttpServer::recordAuthFailure(const std::string& clientIp) {
+    if (clientIp.empty()) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(authFailureMutex);
+    const auto now = std::chrono::steady_clock::now();
+
+    if (authFailures.size() > 4096) {
+        for (auto it = authFailures.begin(); it != authFailures.end();) {
+            const bool expiredLock = it->second.lockedUntil <= now;
+            const bool staleWindow = (now - it->second.firstFailure) > kAuthFailureWindow;
+            if (expiredLock && staleWindow) {
+                it = authFailures.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    auto& state = authFailures[clientIp];
+    if (state.firstFailure.time_since_epoch().count() == 0 ||
+        (now - state.firstFailure) > kAuthFailureWindow) {
+        state.firstFailure = now;
+        state.failures = 0;
+    }
+    ++state.failures;
+    if (state.failures == kAuthFailureLimit) {
+        state.lockedUntil = now + kAuthLockoutDuration;
+        std::cerr << "HTTP authentication lockout armed: ip=" << clientIp
+                  << " failures=" << state.failures << std::endl;
+    }
+}
+
+void HttpServer::clearAuthFailures(const std::string& clientIp) {
+    if (clientIp.empty()) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(authFailureMutex);
+    authFailures.erase(clientIp);
 }
 
 std::set<int> HttpServer::configuredHttpPorts() const {
@@ -1286,6 +1467,19 @@ bool HttpServer::validateHttpPortsForConfig(const AppConfig& config, std::string
     return true;
 }
 
+// 203.76: the panel used to be reachable on every interface, with no way to
+// restrict it to a reverse proxy. bind_address now selects the listen address.
+tcp::endpoint HttpServer::bindEndpointFor(int port) const {
+    boost::system::error_code ec;
+    const auto address = boost::asio::ip::make_address(configManager.config.bindAddress, ec);
+    if (ec) {
+        std::cerr << "HTTP server invalid bind_address '" << configManager.config.bindAddress
+                  << "': " << ec.message() << "; falling back to 0.0.0.0" << std::endl;
+        return tcp::endpoint(tcp::v4(), static_cast<unsigned short>(port));
+    }
+    return tcp::endpoint(address, static_cast<unsigned short>(port));
+}
+
 bool HttpServer::bindHttpPorts(const std::set<int>& ports) {
     std::lock_guard<std::mutex> acceptorLock(acceptorsMutex);
     boost::system::error_code ec;
@@ -1307,7 +1501,7 @@ bool HttpServer::bindHttpPorts(const std::set<int>& ports) {
         }
 
         auto listener = std::make_shared<tcp::acceptor>(ioContext);
-        tcp::endpoint endpoint(tcp::v4(), static_cast<unsigned short>(port));
+        tcp::endpoint endpoint = bindEndpointFor(port);
         listener->open(endpoint.protocol(), ec);
         if (ec) {
             std::cerr << "HTTP server failed to open port " << port << ": " << ec.message() << std::endl;
@@ -1335,7 +1529,8 @@ bool HttpServer::bindHttpPorts(const std::set<int>& ports) {
 
         doAccept(listener, port, generation);
         nextAcceptors[port] = std::move(listener);
-        std::cerr << "HTTP server listening on port " << port << std::endl;
+        std::cerr << "HTTP server listening on " << endpoint.address().to_string()
+                  << ":" << port << std::endl;
     }
 
     const bool primaryBound = nextAcceptors.count(configManager.config.httpPort) > 0;
@@ -3395,6 +3590,7 @@ std::string HttpServer::renderIndexPage() {
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TVStreammerSAT5</title>
+<script>window.__TVS_VERSION="__TVS_PROGRAM_VERSION__";</script>
 <style>
 html{font-size:14px}
 body{font-family:Arial,Helvetica,sans-serif;background:#0f1218;color:#EEE;margin:0;padding:0;min-height:100vh}
@@ -5320,7 +5516,7 @@ function openAboutModal() {
     <h2>${t('about')}</h2>
     <div class="about-list">
       <div class="about-row"><strong>${t('product')}</strong><span>TVStreammerSAT5</span></div>
-      <div class="about-row"><strong>${t('version')}</strong><span>${state.program_version||'203.73'}${language === 'en' ? ' EN' : ''}</span></div>
+      <div class="about-row"><strong>${t('version')}</strong><span>${state.program_version||window.__TVS_VERSION||'?'}${language === 'en' ? ' EN' : ''}</span></div>
       <div class="about-row"><strong>${t('name')}</strong><span>Лукомский Виталий</span></div>
       <div class="about-row"><strong>${t('country')}</strong><span>Беларусь, г. Борисов</span></div>
       <div class="about-row"><strong>${t('contactEmail')}</strong><a href="mailto:monkipnet@gmail.com">monkipnet@gmail.com</a></div>
@@ -7329,5 +7525,17 @@ window.tvstreammerPreviewController = window.TVStreammerPreview.install({
 </body>
 </html>
 )HTML";
-    return html;
+    // 203.76: the static page carries a version placeholder so the UI can never
+    // display a version that drifted from src/AppVersion.h. The API is still the
+    // authoritative source (state.program_version); this is only the bootstrap.
+    static const std::string page = [] {
+        static const std::string placeholder = "__TVS_PROGRAM_VERSION__";
+        std::string rendered = html;
+        const auto position = rendered.find(placeholder);
+        if (position != std::string::npos) {
+            rendered.replace(position, placeholder.size(), kProgramVersion);
+        }
+        return rendered;
+    }();
+    return page;
 }

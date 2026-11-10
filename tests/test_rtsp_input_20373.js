@@ -1,12 +1,13 @@
 const fs = require('fs');
 const assert = require('assert');
+const { readFile, readProgramVersion } = require('./lib/version');
 
-const stream = fs.readFileSync('src/StreamManager.cpp', 'utf8');
-const header = fs.readFileSync('src/StreamManager.h', 'utf8');
-const http = fs.readFileSync('src/HttpServer.cpp', 'utf8');
-const version = fs.readFileSync('src/AppVersion.h', 'utf8');
+const stream = readFile('src/StreamManager.cpp');
+const header = readFile('src/StreamManager.h');
+const http = readFile('src/HttpServer.cpp');
 
-assert.match(version, /kProgramVersion\s*=\s*"203\.73"/, 'version must remain 203.73');
+// 203.76: version shape is checked in one place instead of pinning a literal.
+readProgramVersion();
 assert.ok(http.includes('value="rtsp-tcp"'), 'RTSP TCP input mode missing');
 assert.ok(http.includes('value="rtsp-udp"'), 'RTSP UDP input mode missing');
 assert.ok(http.includes('value="rtsp-auto"'), 'RTSP Auto input mode missing');
@@ -17,4 +18,4 @@ assert.ok(stream.includes('alawdec') && stream.includes('mulawdec'), 'G.711 deco
 assert.ok(stream.includes('audio_normalize=AAC-LC/48000/2'), 'G.711 AAC normalization missing');
 assert.ok(header.includes('rtspMpegTsLinked'), 'RTSP MP2T duplicate-branch guard missing');
 
-console.log('PASS: 203.73 RTSP input TCP/UDP/Auto + H264/H265/AAC/MPA/G711/MP2T support');
+console.log('PASS: RTSP input TCP/UDP/Auto + H264/H265/AAC/MPA/G711/MP2T support');

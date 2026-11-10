@@ -1,0 +1,101 @@
+name: CI
+
+# 203.76: there was no CI at all. Every push and pull request now builds the
+# project on the two Ubuntu LTS releases the panel is deployed on, runs the C++
+# unit tests through CTest and the source-level regression suite through Node.
+
+on:
+  push:
+    branches:
+      - main
+      - 'arena/**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: build + test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-22.04
+          - ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Show toolchain versions
+        run: |
+          cmake --version
+          g++ --version | head -1
+          node --version
+          cat /etc/os-release | head -2
+
+      - name: Install dependencies
+        run: sudo ./install_deps.sh
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+      - name: Build
+        run: cmake --build build --parallel "$(nproc)"
+
+      - name: C++ unit tests (CTest)
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Source-level regression tests
+        run: node tests/run-all.js
+
+  static-checks:
+    name: static checks
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Shell syntax
+        run: |
+          bash -n install_deps.sh
+          bash -n install_tvstreammersat5_binary.sh
+          bash -n uninstall_tvstreammersat5.sh
+          bash -n legacy/tvstreamer5/export-branch.sh
+          for script in scripts/*.sh; do bash -n "$script"; done
+
+      - name: JavaScript syntax
+        run: |
+          for file in tests/*.js tests/lib/*.js web/preview/*.js; do
+            node --check "$file"
+          done
+
+      - name: No build artefacts committed
+        run: |
+          if git ls-files | grep -E '(^|/)(build|CMakeFiles)/|__pycache__|\.pyc$'; then
+            echo "Build artefacts must not be tracked" >&2
+            exit 1
+          fi
+
+      - name: No hard-coded program version in sources
+        run: |
+          if grep -rnE "program_version\"[[:space:]]*:[[:space:]]*\"[0-9]{3}\.[0-9]{2}\"" src/; then
+            echo "program_version must come from src/AppVersion.h" >&2
+            exit 1
+          fi

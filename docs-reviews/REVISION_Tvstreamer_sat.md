@@ -213,3 +213,30 @@ git push -u origin main
 ### Actualización 2026-11-10 (2ª comprobación)
 
 Comprobado de nuevo con y sin autenticación: `TalaveraSama/Tvstreamer_sat` y `TalaveraSama/TVStreamer5` siguen devolviendo **404**, no hay ningún repo con `fork=true` en la cuenta (42 repos) y los únicos forks de `Monkipnet/Tvstreamer_sat` son `juesus/`, `cortijo/` y `sohag1192/`. El upstream tampoco tiene commits nuevos (`f9af8f6`, sin cambios). Ver `REVISION_TVStreamer5.md` § 1.
+
+---
+
+## 11. Estado de las correcciones (203.76, 2026-11-10)
+
+Trabajo aplicado sobre esta copia. Detalle completo en `CHANGELOG.md` y `SECURITY.md`.
+
+| Hallazgo | Estado | Dónde |
+|---|---|---|
+| S1 sin TLS | **Mitigado, no resuelto**: `bind_address` para dejar el panel en loopback + guía de proxy TLS con Caddy/nginx | `src/HttpServer.cpp`, `docs/INSTALL_UBUNTU.md` |
+| S2 `admin/admin` | **Resuelto**: contraseña aleatoria de 20 caracteres generada al primer arranque e impresa una vez | `src/ConfigManager.cpp` |
+| S3 streams públicos | **Configurable**: `require_stream_auth` (por compatibilidad sigue desactivado por defecto) + aviso en el arranque | `src/HttpServer.cpp`, `src/main.cpp` |
+| S4 sin CSRF | **Resuelto**: política de mismo origen con 20 casos de test | `src/HttpOriginPolicy.h`, `tests/test_http_origin_20376.cpp` |
+| S5 `body_limit` 512 MB | **Resuelto**: 64 MiB por defecto, configurable, `413` | `src/HttpServer.cpp`, `src/ConfigManager.*` |
+| S6 subida arbitraria | **Pendiente**: mitigado por el límite de tamaño; falta validación de contenedor | — |
+| S7 `popen`/shell | **Resuelto**: `posix_spawnp` + argv, PID validado | `src/OscamMiniManager.cpp` |
+| S8 clave junto al secreto | **Pendiente (documentado)** | `SECURITY.md` |
+| S9 secretos en claro | **Pendiente (documentado)** | `SECURITY.md` |
+| S10 credenciales OSCam por defecto | **Pendiente**: el panel obliga a cambiarlas al guardar; falta validación al arrancar | `src/OscamMiniManager.cpp` |
+| S11 login en logs | **Resuelto** | `src/main.cpp` |
+| S12 `/health` anónimo | Aceptado (necesario para sondas) | — |
+| T1 3 tests rojos | **Resuelto**: la versión se lee de `AppVersion.h` | `tests/lib/version.js` |
+| T2 tests `.cpp` sin compilar | **Resuelto**: 4 tests registrados en CTest | `CMakeLists.txt` |
+| T3 sin CI | **Añadida**: matriz 22.04/24.04 + checks estáticos | `.github/workflows/ci.yml` |
+| T4 sin warnings | **Añadido**: `-Wall -Wextra` opción por defecto | `CMakeLists.txt` |
+| T5 `__pycache__` versionado | **Resuelto** + `.gitignore` | — |
+| T6 versión del README obsoleta | **Resuelto** (203.76) | `README.md` |

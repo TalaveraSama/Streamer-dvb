@@ -1,6 +1,14 @@
 # TVStreammerSAT5
 
-**Версия: 203.73**
+**Версия: 203.76**
+
+> **203.76 — baseline de seguridad.** El panel ya no se instala con `admin/admin`:
+> en el primer arranque se genera una contraseña aleatoria y se imprime una vez en
+> el log del servicio. Las peticiones de estado se validan contra el mismo origen
+> (anti-CSRF), la autenticación tiene bloqueo por intentos y el cuerpo de petición
+> está acotado. Despliegue en Ubuntu 22.04/24.04, TLS y cortafuegos:
+> [docs/INSTALL_UBUNTU.md](docs/INSTALL_UBUNTU.md). Modelo de amenaza y límites:
+> [SECURITY.md](SECURITY.md). Cambios: [CHANGELOG.md](CHANGELOG.md).
 
 TVStreammerSAT5 - сервер маршрутизации, мониторинга и преобразования телевизионных потоков на базе C++17 и GStreamer. Программа принимает сетевые и спутниковые источники, формирует один или несколько выходов для каждого канала и управляется через встроенную русско-английскую веб-панель.
 

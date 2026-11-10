@@ -48,8 +48,29 @@ int main() {
         return 1;
     }
 
+    // 203.76: the login name is no longer written to the service log, and weak
+    // or legacy credentials are called out explicitly at startup.
     std::cerr << "Config loaded: http_port=" << configManager.config.httpPort
-              << " login=" << configManager.config.login << std::endl;
+              << " bind_address=" << configManager.config.bindAddress
+              << " require_stream_auth=" << (configManager.config.requireStreamAuth ? "on" : "off")
+              << " max_request_body_mb=" << configManager.config.maxRequestBodyMb
+              << std::endl;
+    if (configManager.config.password.size() < 8) {
+        std::cerr << "SECURITY WARNING: the panel password is shorter than 8 characters "
+                     "(legacy default?). Change it in the panel before exposing the port."
+                  << std::endl;
+    }
+    if (configManager.config.bindAddress == "0.0.0.0" || configManager.config.bindAddress == "::") {
+        std::cerr << "SECURITY NOTICE: the panel listens on every interface and speaks plain "
+                     "HTTP. Keep port " << configManager.config.httpPort
+                  << " behind a firewall or a TLS reverse proxy (see docs/INSTALL_UBUNTU.md)."
+                  << std::endl;
+    }
+    if (!configManager.config.requireStreamAuth) {
+        std::cerr << "SECURITY NOTICE: HTTP-TS/HLS player URLs are public until "
+                     "require_stream_auth is enabled or subscriber IP filtering is on."
+                  << std::endl;
+    }
 
     CardManager::instance().configure(configManager.config.camClients);
 

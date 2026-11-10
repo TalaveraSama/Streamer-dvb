@@ -3,15 +3,21 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cerrno>
 #include <cstdio>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <map>
 #include <memory>
 #include <set>
 #include <sstream>
+#include <sys/types.h>
 #include <sys/wait.h>
+#include <spawn.h>
 #include <unistd.h>
+
+extern char** environ;
 
 namespace fs = std::filesystem;
 
@@ -240,22 +246,65 @@ bool OscamMiniManager::writeAtomic(const std::string& path, const std::string& c
     }
 }
 
-std::string OscamMiniManager::run(const std::string& command, int* rc) {
-    std::array<char, 512> buffer{};
-    std::string output;
-    FILE* pipe = popen((command + " 2>&1").c_str(), "r");
-    if (!pipe) {
-        if (rc) {
-            *rc = -1;
-        }
-        return "popen failed";
-    }
-    while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe)) {
-        output += buffer.data();
-    }
-    int status = pclose(pipe);
+// 203.76: commands are executed with posix_spawnp and an explicit argv vector.
+// The previous popen()/shell implementation concatenated service names, PIDs and
+// user-supplied actions into a command line, so any future argument that reached
+// this function would have been a shell-injection primitive. stdout and stderr
+// are still merged into the captured output, matching the old "2>&1" behaviour.
+std::string OscamMiniManager::run(const std::vector<std::string>& argv, int* rc) {
     if (rc) {
-        *rc = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+        *rc = -1;
+    }
+    if (argv.empty() || argv.front().empty()) {
+        return "empty command";
+    }
+
+    int pipeFds[2] = {-1, -1};
+    if (::pipe(pipeFds) != 0) {
+        return std::string("pipe failed: ") + std::strerror(errno);
+    }
+
+    std::vector<char*> argvPtrs;
+    argvPtrs.reserve(argv.size() + 1);
+    for (const auto& argument : argv) {
+        argvPtrs.push_back(const_cast<char*>(argument.c_str()));
+    }
+    argvPtrs.push_back(nullptr);
+
+    posix_spawn_file_actions_t actions;
+    posix_spawn_file_actions_init(&actions);
+    posix_spawn_file_actions_adddup2(&actions, pipeFds[1], STDOUT_FILENO);
+    posix_spawn_file_actions_adddup2(&actions, pipeFds[1], STDERR_FILENO);
+    posix_spawn_file_actions_addclose(&actions, pipeFds[0]);
+    posix_spawn_file_actions_addclose(&actions, pipeFds[1]);
+
+    pid_t child = -1;
+    const int spawnResult = ::posix_spawnp(&child, argvPtrs[0], &actions, nullptr,
+                                           argvPtrs.data(), environ);
+    posix_spawn_file_actions_destroy(&actions);
+    ::close(pipeFds[1]);
+
+    if (spawnResult != 0) {
+        ::close(pipeFds[0]);
+        return std::string("posix_spawnp failed: ") + std::strerror(spawnResult);
+    }
+
+    std::array<char, 4096> buffer{};
+    std::string output;
+    ssize_t bytesRead = 0;
+    while ((bytesRead = ::read(pipeFds[0], buffer.data(), buffer.size())) > 0) {
+        output.append(buffer.data(), static_cast<std::size_t>(bytesRead));
+    }
+    ::close(pipeFds[0]);
+
+    int status = 0;
+    pid_t waited = -1;
+    do {
+        waited = ::waitpid(child, &status, 0);
+    } while (waited < 0 && errno == EINTR);
+
+    if (rc) {
+        *rc = (waited == child && WIFEXITED(status)) ? WEXITSTATUS(status) : -1;
     }
     return output;
 }
@@ -568,7 +617,7 @@ Json::Value OscamMiniManager::statusLocked() {
     result["binary_exists"] = fs::exists(kBinary);
 
     int rc = 0;
-    const std::string active = trim(run("systemctl is-active " + std::string(kService), &rc));
+    const std::string active = trim(run({"systemctl", "is-active", kService}, &rc));
     const bool serviceActive = active == "active";
     result["service_active"] = serviceActive;
     result["service_state"] = active.empty() ? "unknown" : active;
@@ -579,20 +628,28 @@ Json::Value OscamMiniManager::statusLocked() {
     }
     result["devices"] = devices;
 
-    const std::string process = trim(run("ps -C oscam-mini -o pid=,rss=,vsz=,%cpu=,cmd="));
+    const std::string process = trim(run({"ps", "-C", "oscam-mini", "-o", "pid=,rss=,vsz=,%cpu=,cmd="}));
     result["process"] = process;
 
     std::string pid;
     if (serviceActive) {
-        pid = trim(run("systemctl show -p MainPID --value " + std::string(kService)));
+        pid = trim(run({"systemctl", "show", "-p", "MainPID", "--value", kService}));
         if (pid == "0") {
             pid.clear();
         }
     }
 
-    std::string logCommand = "journalctl -u " + std::string(kService) + " -n 120 --no-pager -o cat";
+    std::vector<std::string> logCommand{"journalctl", "-u", kService, "-n", "120", "--no-pager", "-o", "cat"};
     if (!pid.empty()) {
-        logCommand = "journalctl -u " + std::string(kService) + " _PID=" + pid + " -n 240 --no-pager -o cat";
+        // The PID is only ever taken from `systemctl show -p MainPID`, but it is
+        // validated anyway so a malformed value can never become an argument
+        // that journalctl would interpret as a match specification.
+        const bool pidIsNumeric = std::all_of(pid.begin(), pid.end(),
+            [](unsigned char ch) { return std::isdigit(ch) != 0; });
+        if (pidIsNumeric) {
+            logCommand = {"journalctl", "-u", kService, "_PID=" + pid, "-n", "240",
+                          "--no-pager", "-o", "cat"};
+        }
     }
     std::string log = run(logCommand);
     if (log.size() > 32000) {
@@ -601,7 +658,7 @@ Json::Value OscamMiniManager::statusLocked() {
     result["log"] = log;
 
     const Settings settings = loadLocked();
-    const std::string established = serviceActive ? run("ss -Htan state established 2>/dev/null") : std::string();
+    const std::string established = serviceActive ? run({"ss", "-Htan", "state", "established"}) : std::string();
 
     Json::Value userActivity(Json::objectValue);
     for (const auto& user : settings.users) {
@@ -786,7 +843,7 @@ std::string OscamMiniManager::saveSettingsJson(const std::string& body) {
     }
 
     int rc = 0;
-    const std::string restartOutput = run("systemctl restart " + std::string(kService), &rc);
+    const std::string restartOutput = run({"systemctl", "restart", kService}, &rc);
     output["ok"] = rc == 0;
     if (rc != 0) {
         output["error"] = "Конфигурация сохранена, но OSCam-mini не перезапущен: " + trim(restartOutput);
@@ -809,7 +866,7 @@ std::string OscamMiniManager::serviceActionJson(const std::string& body) {
     }
 
     int rc = 0;
-    const std::string commandOutput = run("systemctl " + action + " " + std::string(kService), &rc);
+    const std::string commandOutput = run({"systemctl", action, kService}, &rc);
     output["ok"] = rc == 0;
     if (rc != 0) {
         output["error"] = trim(commandOutput);

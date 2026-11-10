@@ -121,10 +121,22 @@ struct CamClientConfig {
 
 struct AppConfig {
     std::string login = "admin";
+    // 203.76: never ship a usable default credential. A new configuration gets a
+    // random password generated at first start (see ConfigManager::load) and the
+    // value is printed once to stderr. The literal default below only exists so
+    // an in-memory AppConfig() is never left with an empty password.
     std::string password = "admin";
     std::string serverName = "TVStreammerSAT5";
     int httpPort = 9000;
     std::string language = "en";
+    // 203.76: deployment hardening. "0.0.0.0" keeps the historical behaviour;
+    // "127.0.0.1" restricts the panel to a local reverse proxy.
+    std::string bindAddress = "0.0.0.0";
+    // When true, HTTP-TS and HLS player URLs also require the panel credentials.
+    bool requireStreamAuth = false;
+    // Upper bound for an accepted HTTP request body (in MiB). 203.76 lowered the
+    // previous hard-coded 512 MiB parser limit to a bounded, configurable value.
+    int maxRequestBodyMb = 64;
     std::string telegramToken;
     std::string telegramChatId;
     // Opt-in SRT profile for VPS/VDS/container hosts.
