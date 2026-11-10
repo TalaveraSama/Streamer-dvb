@@ -48,7 +48,10 @@ jobs:
       - name: Install dependencies
         run: |
           set -o pipefail
-          sudo ./install_deps.sh 2>&1 | tee "${RUNNER_TEMP}/install_deps.log"
+          # sudo resets the environment, so GITHUB_ACTIONS has to be passed through
+          # explicitly for the script to emit workflow-command annotations.
+          sudo GITHUB_ACTIONS="${GITHUB_ACTIONS:-1}" ./install_deps.sh 2>&1 \
+            | tee "${RUNNER_TEMP}/install_deps.log"
 
       # The raw job log is not readable from every client, so apt/dpkg errors are
       # re-emitted as check annotations (visible through the API as well).
@@ -59,7 +62,7 @@ jobs:
           [ -f "$log" ] || { echo "::error::install_deps.sh produced no log"; exit 0; }
           # apt explains a dependency conflict in the lines around the "E:" one,
           # so the whole tail is surfaced, not just the matching prefixes.
-          tail -n 15 "$log" | while IFS= read -r line; do
+          tail -n 5 "$log" | while IFS= read -r line; do
             echo "::error file=install_deps.sh::${line}"
           done
 
