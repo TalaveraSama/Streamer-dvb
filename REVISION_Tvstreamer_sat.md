@@ -209,3 +209,7 @@ git remote rename origin upstream
 git remote add origin git@github.com:TalaveraSama/Tvstreamer_sat.git
 git push -u origin main
 ```
+
+### Actualización 2026-11-10 (2ª comprobación)
+
+Comprobado de nuevo con y sin autenticación: `TalaveraSama/Tvstreamer_sat` y `TalaveraSama/TVStreamer5` siguen devolviendo **404**, no hay ningún repo con `fork=true` en la cuenta (42 repos) y los únicos forks de `Monkipnet/Tvstreamer_sat` son `juesus/`, `cortijo/` y `sohag1192/`. El upstream tampoco tiene commits nuevos (`f9af8f6`, sin cambios). Ver `REVISION_TVStreamer5.md` § 1.
