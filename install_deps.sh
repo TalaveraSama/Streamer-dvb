@@ -28,6 +28,14 @@ done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# In CI the job log is not always readable, but check annotations are. Emit the
+# diagnostics that matter as single-line workflow commands (no-op elsewhere).
+annotate() {
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        echo "::error title=install_deps::$(printf '%s' "$*" | tr '\n' ' ' | cut -c1-900)"
+    fi
+}
+
 # --- release detection -------------------------------------------------------
 DISTRO_ID="unknown"
 DISTRO_VERSION="unknown"
@@ -176,7 +184,9 @@ for package in "${REQUIRED_PACKAGES[@]}" "${RUNTIME_PACKAGES[@]}"; do
     fi
 done
 
+echo "Resolved: required+runtime=${#TO_INSTALL[@]} available, missing=${#MISSING_REQUIRED[@]}"
 if [[ "${#MISSING_REQUIRED[@]}" -ne 0 ]]; then
+    annotate "missing required packages on ${DISTRO_ID} ${DISTRO_VERSION}: ${MISSING_REQUIRED[*]}"
     # Printed on stdout as well: stdout is flushed at exit, so CI logs always end
     # with the reason instead of burying it between apt progress lines.
     echo "MISSING_REQUIRED_PACKAGES: ${MISSING_REQUIRED[*]}"
@@ -188,11 +198,14 @@ fi
 
 echo "Required packages (${#TO_INSTALL[@]}): ${TO_INSTALL[*]}"
 if ! "${APT_GET[@]}" install -y --no-install-recommends "${TO_INSTALL[@]}"; then
-    # Re-run the simulation to capture the dependency conflict in a compact,
-    # greppable form that survives log truncation.
+    # Re-run the simulation to capture the dependency conflict in a compact form
+    # that survives log truncation, and surface it as a CI annotation.
     echo "APT_INSTALL_FAILED: the required package set could not be installed."
-    "${APT_GET[@]}" -s install "${TO_INSTALL[@]}" 2>&1 \
-        | grep -E "Depends:|Conflicts:|Breaks:|E:" | head -15 || true
+    simulation="$("${APT_GET[@]}" -s install "${TO_INSTALL[@]}" 2>&1 \
+        | grep -E "Depends:|Conflicts:|Breaks:|E:" | head -8 || true)"
+    printf '%s\n' "${simulation}"
+    annotate "apt simulate failed: ${simulation}"
+    annotate "attempted set: ${TO_INSTALL[*]}"
     exit 1
 fi
 
