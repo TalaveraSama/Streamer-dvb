@@ -1,0 +1,10 @@
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+tvstreammersat5-config.json
+tvstreammersat5-subscribers.json
+backup-files/
+.vscode/
+*.log

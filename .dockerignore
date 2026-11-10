@@ -1,0 +1,11 @@
+build/
+.git/
+.vscode/
+docs/
+backup-files/
+*.log
+*.zip
+*.patch
+*.apk
+tvstreammersat5-config.json
+tvstreammersat5-subscribers.json
