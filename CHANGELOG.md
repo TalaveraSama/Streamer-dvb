@@ -3,6 +3,34 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Las versiones siguen el esquema del proyecto original (`203.xx`).
 
+## [203.77] - 2026-11-10
+
+Corrección del instalador para Ubuntu 22.04 detectada por la CI recién añadida.
+
+### Corregido
+
+- **`install_deps.sh` en Ubuntu 22.04**: `libgstreamer1.0-dev` depende de
+  `libunwind-dev`, que fija `libunwind8` a la versión del archivo. Las imágenes
+  cloud con un `libunwind8` más nuevo hacían que `apt-get install` abortara con
+  *"held broken packages"* sin nombrar la causa. Ahora `libunwind-dev` se
+  reconcilia explícitamente (con `--allow-downgrades` si hace falta) antes de
+  instalar el conjunto requerido.
+- **Paquetes opcionales no bloqueantes**: VA-API, `vainfo`, `intel-media-va-driver`,
+  `pcscd` y `pcsc-tools` se instalan en una segunda pasada que puede fallar sin
+  abortar la instalación.
+- `apt-get` con `DPkg::Lock::Timeout=180` para no chocar con `unattended-upgrades`.
+
+### Mejorado
+
+- Diagnóstico de CI: el log de dependencias se guarda como artefacto y los
+  errores de apt/dpkg se emiten como anotaciones (`GITHUB_ACTIONS` se pasa a
+  través de `sudo`), además de un `apt-get -s` compacto al fallar.
+
+### Verificado
+
+- CI **en verde** en `ubuntu-22.04` y `ubuntu-24.04`: dependencias, compilación,
+  4 tests de CTest y 12 tests de regresión Node.
+
 ## [203.76] - 2026-11-10
 
 Endurecimiento de seguridad, arreglo de la suite de tests y soporte declarado de
