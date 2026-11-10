@@ -9,6 +9,7 @@
 > está acotado. Despliegue en Ubuntu 22.04/24.04, TLS y cortafuegos:
 > [docs/INSTALL_UBUNTU.md](docs/INSTALL_UBUNTU.md). Modelo de amenaza y límites:
 > [SECURITY.md](SECURITY.md). Cambios: [CHANGELOG.md](CHANGELOG.md).
+> Instalación en un VPS Ubuntu 22.04/24.04: `sudo ./scripts/install_from_source.sh`.
 
 TVStreammerSAT5 - сервер маршрутизации, мониторинга и преобразования телевизионных потоков на базе C++17 и GStreamer. Программа принимает сетевые и спутниковые источники, формирует один или несколько выходов для каждого канала и управляется через встроенную русско-английскую веб-панель.
 

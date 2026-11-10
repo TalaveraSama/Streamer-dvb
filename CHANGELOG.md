@@ -53,6 +53,9 @@ Ubuntu 22.04/24.04 sobre la copia de trabajo de `Monkipnet/Tvstreamer_sat`
   estar cubierto** (TLS, streams públicos, secretos de terceros en claro).
 - `install_deps.sh --check`: verifica pkg-config, cabeceras y elementos de
   GStreamer sin instalar nada.
+- `scripts/install_from_source.sh`: instalación/actualización completa en un VPS
+  (dependencias, build, tests, binario, plugin CA, OSCam-mini, unit systemd
+  endurecido y arranque), idempotente y sin tocar la configuración existente.
 
 ### Cambiado
 

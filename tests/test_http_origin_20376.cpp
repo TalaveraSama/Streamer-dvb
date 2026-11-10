@@ -3,13 +3,16 @@
 // dependencies, so this test runs standalone (no GStreamer, no Boost).
 #include "../src/HttpOriginPolicy.h"
 
-#include <cassert>
 #include <iostream>
 #include <string>
 
 namespace hs = tvs::http_security;
 
 namespace {
+
+// The test must keep working when CMake builds with RelWithDebInfo/Release,
+// where NDEBUG turns assert() into a no-op; failures are counted explicitly.
+int failures = 0;
 
 void expectAllowed(const std::string& host,
                    const std::string& origin,
@@ -18,7 +21,7 @@ void expectAllowed(const std::string& host,
     const auto verdict = hs::evaluate(host, origin, referer);
     if (!verdict.allowed) {
         std::cerr << "FAIL: expected allowed: " << what << std::endl;
-        assert(false);
+        ++failures;
     }
 }
 
@@ -29,7 +32,7 @@ void expectBlocked(const std::string& host,
     const auto verdict = hs::evaluate(host, origin, referer);
     if (verdict.allowed) {
         std::cerr << "FAIL: expected blocked: " << what << std::endl;
-        assert(false);
+        ++failures;
     }
 }
 
@@ -38,7 +41,10 @@ void expectBlocked(const std::string& host,
 int main() {
     // Clients that send neither Origin nor Referer cannot be browser-forged.
     expectAllowed("panel.example.com:9000", "", "", "no source headers");
-    assert(!hs::evaluate("panel.example.com:9000", "", "").sourcePresent);
+    if (hs::evaluate("panel.example.com:9000", "", "").sourcePresent) {
+        std::cerr << "FAIL: empty Origin/Referer must not be reported as present" << std::endl;
+        ++failures;
+    }
 
     // Straightforward same-origin requests from the panel itself.
     expectAllowed("panel.example.com:9000", "http://panel.example.com:9000", "",
@@ -85,6 +91,11 @@ int main() {
     // Case insensitivity.
     expectAllowed("Panel.Example.COM:9000", "http://panel.example.com:9000", "",
                   "case-insensitive host comparison");
+
+    if (failures != 0) {
+        std::cerr << failures << " same-origin policy case(s) failed" << std::endl;
+        return 1;
+    }
 
     std::cout << "PASS: 203.76 same-origin policy for state-changing requests" << std::endl;
     return 0;

@@ -20,6 +20,27 @@ contra la release detectada y avisa si algo no existe en ese catálogo.
 
 ## 2. Instalación nativa
 
+### Vía rápida (recomendada en un VPS)
+
+```bash
+git clone https://github.com/TalaveraSama/Streamer-dvb.git
+cd Streamer-dvb
+sudo ./scripts/install_from_source.sh
+```
+
+El script instala dependencias, compila, ejecuta `ctest` y la suite de regresión,
+copia binario/plugin/OSCam-mini, instala el unit systemd endurecido y arranca el
+servicio. Es idempotente (sirve para actualizar) y **no toca** la configuración
+existente. Opciones: `--skip-tests`, `--no-start`, `--prefix <ruta>`.
+
+Al terminar:
+
+```bash
+journalctl -u tvstreammersat5 -n 30 --no-pager   # aquí sale la contraseña inicial
+```
+
+### Paso a paso
+
 ```bash
 # 1. Dependencias (detecta 22.04/24.04 automáticamente)
 sudo ./install_deps.sh
