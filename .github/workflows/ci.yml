@@ -46,7 +46,21 @@ jobs:
           cat /etc/os-release | head -2
 
       - name: Install dependencies
-        run: sudo ./install_deps.sh
+        run: |
+          set -o pipefail
+          sudo ./install_deps.sh 2>&1 | tee "${RUNNER_TEMP}/install_deps.log"
+
+      # The raw job log is not readable from every client, so apt/dpkg errors are
+      # re-emitted as check annotations (visible through the API as well).
+      - name: Report dependency failure
+        if: failure()
+        run: |
+          log="${RUNNER_TEMP}/install_deps.log"
+          [ -f "$log" ] || { echo "::error::install_deps.sh produced no log"; exit 0; }
+          grep -nE "^(E:|W:|Err:|dpkg:|Some packages|These required|apt-get install failed)" "$log" \
+            | head -20 | while IFS= read -r line; do
+                echo "::error file=install_deps.sh::${line}"
+              done
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo

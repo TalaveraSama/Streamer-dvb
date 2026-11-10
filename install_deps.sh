@@ -158,7 +158,9 @@ if [[ "$MODE" == "check" ]]; then
 fi
 
 # --- install mode ------------------------------------------------------------
-APT_GET=("${SUDO[@]}" apt-get)
+# DPkg::Lock::Timeout: unattended-upgrades can hold the dpkg lock on cloud
+# images and make `apt-get install` fail with exit code 100.
+APT_GET=("${SUDO[@]}" apt-get -o DPkg::Lock::Timeout=180)
 export DEBIAN_FRONTEND=noninteractive
 
 echo "Installing TVStreammerSAT5 dependencies on $DISTRO_ID $DISTRO_VERSION..."
@@ -174,15 +176,6 @@ for package in "${REQUIRED_PACKAGES[@]}" "${RUNTIME_PACKAGES[@]}"; do
     fi
 done
 
-SKIPPED_OPTIONAL=()
-for package in "${OPTIONAL_PACKAGES[@]}"; do
-    if package_available "$package"; then
-        TO_INSTALL+=("$package")
-    else
-        SKIPPED_OPTIONAL+=("$package")
-    fi
-done
-
 if [[ "${#MISSING_REQUIRED[@]}" -ne 0 ]]; then
     echo "These required packages are not available on $DISTRO_ID $DISTRO_VERSION:" >&2
     printf '  - %s\n' "${MISSING_REQUIRED[@]}" >&2
@@ -190,11 +183,37 @@ if [[ "${#MISSING_REQUIRED[@]}" -ne 0 ]]; then
     exit 1
 fi
 
+echo "Required packages (${#TO_INSTALL[@]}): ${TO_INSTALL[*]}"
+if ! "${APT_GET[@]}" install -y --no-install-recommends "${TO_INSTALL[@]}"; then
+    echo "apt-get install failed for the required package set." >&2
+    exit 1
+fi
+
+# Optional packages are installed in a second, non-fatal pass: a broken
+# dependency or a conflict between VA-API/NVENC extras on one release must not
+# abort an otherwise valid installation.
+OPTIONAL_AVAILABLE=()
+SKIPPED_OPTIONAL=()
+for package in "${OPTIONAL_PACKAGES[@]}"; do
+    if package_available "$package"; then
+        OPTIONAL_AVAILABLE+=("$package")
+    else
+        SKIPPED_OPTIONAL+=("$package")
+    fi
+done
+
 if [[ "${#SKIPPED_OPTIONAL[@]}" -ne 0 ]]; then
     echo "Optional packages not available on this release (skipped): ${SKIPPED_OPTIONAL[*]}"
 fi
+if [[ "${#OPTIONAL_AVAILABLE[@]}" -ne 0 ]]; then
+    echo "Optional packages (${#OPTIONAL_AVAILABLE[@]}): ${OPTIONAL_AVAILABLE[*]}"
+    if ! "${APT_GET[@]}" install -y --no-install-recommends "${OPTIONAL_AVAILABLE[@]}"; then
+        echo "Warning: these optional packages could not be installed: ${OPTIONAL_AVAILABLE[*]}" >&2
+        echo "         The build does not require them; hardware acceleration or" >&2
+        echo "         smart-card tooling will be unavailable." >&2
+    fi
+fi
 
-"${APT_GET[@]}" install -y --no-install-recommends "${TO_INSTALL[@]}"
 "${APT_GET[@]}" clean
 
 if [[ -x "${ROOT_DIR}/scripts/check_transcoder_plugins.sh" ]]; then
