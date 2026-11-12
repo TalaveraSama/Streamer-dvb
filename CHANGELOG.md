@@ -5,6 +5,9 @@ Las versiones siguen el esquema del proyecto original (`203.xx`).
 
 ## En desarrollo
 
+- Ampliada la traducción española del panel de flujos, DVB, MPTS, CAM y sus
+  mensajes dinámicos; se mantienen el inglés y el ruso.
+
 - Importador Flussonic: opción explícita para recibir cada stream por HLS desde
   un servidor local usando su ID, conservando los destinos UDP y el mapeo de interfaz.
 

@@ -4,11 +4,12 @@
 
 El botón de idioma del panel principal alterna inglés, español y ruso. La
 preferencia se guarda en el navegador y se sincroniza con la configuración del
-panel. La navegación principal y varios controles están traducidos al español.
-**La traducción del panel principal aún no es completa:** algunos formularios,
-mensajes dinámicos y respuestas del servidor pueden seguir apareciendo en inglés
-o ruso. Las cadenas sin traducción requieren revisión individual; no se debe
-interpretar la selección de español como traducción integral.
+panel. Se amplió la traducción al español de los formularios de flujos, HLS,
+transcodificación, DVB, MPTS, CAM, métricas y mensajes dinámicos habituales;
+se conservan las opciones en inglés y ruso. Los datos de usuario, registros,
+respuestas externas y algunos errores o mensajes dinámicos no catalogados pueden
+seguir apareciendo en otro idioma. Se requieren pruebas visuales y funcionales
+con el sistema real antes de considerar completa la traducción.
 
 La página `/oscam-mini` dispone de selector inglés/español independiente que
 comparte la preferencia del navegador. Sus controles y mensajes propios están en
