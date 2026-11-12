@@ -54,7 +54,7 @@ if ! grep -Eq '(^CONFIG_CARDREADER_PCSC=y$|^USE_PCSC[=: ]|^WITH_PCSC[=: ]|^HAVE_
   echo "OSCam-mini PC/SC support not confirmed after CMake configuration" >&2
   exit 5
 fi
-cmake --build "$BUILD" --target oscam -j"$(nproc)"
+cmake --build "$BUILD" --target oscam -j"${TVS_BUILD_JOBS:-$(nproc)}"
 
 if [[ ! -x "$BUILD/oscam" ]]; then
   echo "ERROR: OSCam binary was not produced at $BUILD/oscam" >&2

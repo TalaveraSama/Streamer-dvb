@@ -6,6 +6,7 @@
 #   sudo ./scripts/install_from_source.sh --skip-tests # no ejecuta ctest
 #   sudo ./scripts/install_from_source.sh --no-start   # no arranca el servicio
 #   sudo ./scripts/install_from_source.sh --prefix /opt/TVStreammerSAT5
+#   sudo TVS_BUILD_JOBS=2 ./scripts/install_from_source.sh # limita paralelismo
 #
 # Es idempotente: reinstalarlo actualiza binarios y unidad, y NUNCA toca la
 # configuración existente (tvstreammersat5-config.json, -subscribers.json, etc.).
@@ -57,6 +58,12 @@ if [[ -r /etc/os-release ]]; then
     esac
 fi
 
+BUILD_JOBS="${TVS_BUILD_JOBS:-$(nproc)}"
+if [[ ! "$BUILD_JOBS" =~ ^[1-9][0-9]*$ ]]; then
+    echo "TVS_BUILD_JOBS must be a positive integer" >&2
+    exit 2
+fi
+
 log "1/7 Installing build and runtime dependencies"
 "${ROOT_DIR}/install_deps.sh"
 
@@ -64,11 +71,11 @@ log "2/7 Configuring CMake (Release)"
 cmake -S "${ROOT_DIR}" -B "${ROOT_DIR}/build" -DCMAKE_BUILD_TYPE=Release
 
 log "3/7 Building"
-cmake --build "${ROOT_DIR}/build" --parallel "$(nproc)"
+cmake --build "${ROOT_DIR}/build" --parallel "${BUILD_JOBS}"
 
 if [[ "${RUN_TESTS}" -eq 1 ]]; then
     log "4/7 Running tests"
-    ctest --test-dir "${ROOT_DIR}/build" --output-on-failure
+    ( cd "${ROOT_DIR}/build" && ctest --output-on-failure )
     if command -v node >/dev/null 2>&1; then
         ( cd "${ROOT_DIR}" && node tests/run-all.js --quiet )
     else
