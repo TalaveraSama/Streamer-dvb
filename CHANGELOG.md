@@ -5,6 +5,9 @@ Las versiones siguen el esquema del proyecto original (`203.xx`).
 
 ## En desarrollo
 
+- Importador Flussonic: opción explícita para recibir cada stream por HLS desde
+  un servidor local usando su ID, conservando los destinos UDP y el mapeo de interfaz.
+
 - Compatibilidad de compilación para la API de solicitud de pads de GStreamer
   1.16 y 1.20+. Ubuntu 20.04 sigue siendo experimental hasta validar CI y ejecución.
 - Con glibc anterior a 2.33, las métricas de malloc no están disponibles y

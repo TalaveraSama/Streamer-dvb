@@ -128,6 +128,31 @@ stream backup { input hls://example.invalid/a.m3u8; input tshttp://example.inval
         self.assertEqual(module.translate_input('m4f://192.0.2.7:2086/source_id', options),
                          ('http://192.0.2.7:2086/source_id/mpegts', 'auto'))
 
+    def test_local_hls_relay_uses_stream_id_not_upstream(self):
+        with tempfile.TemporaryDirectory() as td:
+            d=Path(td); src=d/'flus.conf'; target=d/'target.json'; out=d/'out.json'
+            src.write_text("""stream a0ek { disabled false; input m4f://69.30.212.194:2086/different; title "A&E"; push udp://ens37@239.1.1.85:1085; }
+stream backup { input publish://; input http://example.invalid/a?token=secret; }
+stream noinput { title "empty"; }
+""")
+            target.write_text('{"streams":[]}')
+            args=['--local-hls-base','http://192.168.160.7:2086','--interface','ens37=ens36']
+            res=self.run_tool(src,target,*args,'--output',out)
+            self.assertEqual(res.returncode,0,res.stderr)
+            streams=json.loads(out.read_text())['streams']
+            self.assertEqual(streams[0]['input_uri'],'http://192.168.160.7:2086/a0ek/index.m3u8')
+            self.assertEqual(streams[0]['input_mode'],'hls')
+            self.assertEqual((streams[0]['output_host'], streams[0]['output_port'], streams[0]['interface_address']), ('239.1.1.85',1085,'ens36'))
+            self.assertEqual(streams[1]['input_uri'],'http://192.168.160.7:2086/backup/index.m3u8')
+            self.assertNotIn('backup_input_uri', streams[1])
+            self.assertNotIn('secret',out.read_text())
+            self.assertTrue(all(not x['auto_start'] for x in streams))
+            self.assertIn('local_hls_upstream_backups_not_copied: 1',res.stdout)
+            self.assertIn('local_hls_no_input_directive: 1',res.stdout)
+            for bad in ('http://user:pass@host:2086','http://host/a','http://host?token=abc','ftp://host','http://host:bad'):
+                self.assertNotEqual(self.run_tool(src,target,'--local-hls-base',bad).returncode,0)
+            self.assertNotEqual(self.run_tool(src,target,*args,'--allow-query').returncode,0)
+
     def test_unterminated_syntax_fails(self):
         with tempfile.TemporaryDirectory() as td:
             d=Path(td); src=d/'flus.conf'; target=d/'target.json'; src.write_text('stream x { input http://example.invalid/a;')

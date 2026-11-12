@@ -71,6 +71,17 @@ stream dos { input publish://; title Other; }
             self.assertEqual(target.read_bytes(),old)
             self.assertNotEqual(self.run_cli(config,target,'--interface','ens37=ens37','--allow-partial','--output',out).returncode,0)
 
+    def test_local_hls_option_delegated_to_flussonic(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td); cfg=root/'config.txt'; dst=root/'dst.json'; out=root/'out.json'
+            cfg.write_text('stream a0ek { input m4f://example.invalid:2086/other; title "A&E"; push udp://ens37@239.1.1.85:1085; }')
+            dst.write_text('{"streams":[]}')
+            res=self.run_cli(cfg,dst,'--local-hls-base','http://192.168.160.7:2086','--interface','ens37=ens36','--output',out)
+            self.assertEqual(res.returncode,0,res.stderr)
+            stream=json.loads(out.read_text())['streams'][0]
+            self.assertEqual(stream['input_uri'],'http://192.168.160.7:2086/a0ek/index.m3u8')
+            self.assertEqual((stream['interface_address'],stream['output_host'],stream['output_port']),('ens36','239.1.1.85',1085))
+
     def test_installed_entry_point_and_collision_guard(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td); tools = root / 'tools'; tools.mkdir()

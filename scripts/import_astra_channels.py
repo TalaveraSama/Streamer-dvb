@@ -16,6 +16,9 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 MAX_BYTES = 64 * 1024 * 1024
 SAFE_ID = re.compile(r'^[A-Za-z0-9_-]{1,64}$')
 REPORT_LABELS = {
+    'local_hls_inputs': 'entradas HLS locales construidas con el ID del stream',
+    'local_hls_upstream_backups_not_copied': 'respaldos de origen no copiados; permanecen en Flussonic',
+    'local_hls_no_input_directive': 'sin directiva input; comprobar disponibilidad HLS',
     'importable':'canales preparados', 'dvb_importable':'canales DVB preparados',
     'http_importable':'canales HTTP preparados', 'total':'canales encontrados',
     'source_disabled':'canales deshabilitados en el origen', 'duplicate':'canales duplicados',

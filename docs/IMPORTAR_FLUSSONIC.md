@@ -52,6 +52,31 @@ configuración actual de TVStreammerSAT5, incluidos posibles secretos; se crea
 con modo `0600`, no sobrescribe archivos existentes y debe protegerse. Rota las
 credenciales que se hayan compartido accidentalmente.
 
+## Recibir los streams desde un Flussonic local
+
+Con `--local-hls-base http://192.168.160.7:2086` el importador construye la
+entrada de **cada canal** como `http://192.168.160.7:2086/ID/index.m3u8`, usando
+el ID del bloque `stream`, no la URL upstream de `input`. No copia ninguna
+entrada ni respaldo original; Flussonic gestiona sus fuentes y respaldos. Este
+modo también incluye streams con entradas no compatibles o sin `input`: solo
+funcionarán si Flussonic publica HLS en esa ruta, con acceso desde el servidor.
+Los streams deshabilitados en Flussonic pueden no estar disponibles.
+
+Ejemplo de vista previa, únicamente si la interfaz UDP de origen es `ens37` y
+la de salida correcta en destino es `ens36`:
+
+```bash
+python3 /opt/TVStreammerSAT5/tools/import_config.py /home/flussonic.txt \
+  /opt/TVStreammerSAT5/tvstreammersat5-config.json \
+  --local-hls-base http://192.168.160.7:2086 --interface ens37=ens36 --details
+```
+
+Este modo no copia autenticación, opciones de origen ni respaldos al destino;
+la URL base no admite credenciales, ruta ni consultas. Se mantiene el IP y
+puerto de cada salida UDP, con la interfaz mapeada. No actives dos emisores al
+mismo destino UDP (incluido Flussonic). Primero revisa las advertencias y
+verifica una ruta HLS y la red multicast; nada se activa automáticamente.
+
 ## Vista previa y archivo de revisión
 
 Después de publicar y validar la versión del proyecto, ejecutar la vista previa
