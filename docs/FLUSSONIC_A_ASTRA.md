@@ -12,7 +12,8 @@ usuario usa Astra 2025-06-12, `gid` numérico y una lista `make_stream`.
   su autenticación y sus respaldos no se copian; los gestiona Flussonic. Que un
   manifiesto responda HTTP 200 no prueba el funcionamiento ni los demás streams.
 - Las salidas `push udp://INTERFAZ@IP:PUERTO` se conservan con el mapeo
-  explícito de interfaz, y se admiten múltiples salidas. Cuando no hay interfaz
+  explícito de interfaz, y se admiten múltiples salidas. Los destinos marcados
+  `push ... disabled` también se conservan, siempre con el canal Astra detenido. Cuando no hay interfaz
   en el origen, se usa la de destino indicada. Los push no UDP, metadatos y
   demás directivas se omiten y se cuentan; se deben revisar. Se mantiene el
   nombre `title` o, si no existe, el ID de Flussonic.

@@ -138,8 +138,13 @@ def plan(source, target, base, old_iface, new_iface):
         outputs = []
         invalid = False
         for push in fields.get('push', []):
-            if len(push) != 1:
+            # Flussonic can mark a single destination disabled after its URI.
+            # Keep its destination for review, never its active state: every
+            # newly created Astra channel remains disabled.
+            if len(push) not in (1, 2) or (len(push) == 2 and push[1] != 'disabled'):
                 issue('push_invalido'); invalid = True; break
+            if len(push) == 2:
+                report['push_deshabilitados_en_flussonic'] += 1
             if not push[0].lower().startswith('udp://'):
                 report['push_no_udp_omitidos'] += 1
                 continue

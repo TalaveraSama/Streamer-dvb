@@ -19,7 +19,7 @@ class AstraRelayTest(unittest.TestCase):
             d=Path(td); src=d/'flus.conf'; target=d/'astra.json'; out=d/'review.json'
             src.write_text('''edit_auth ignored SOURCE_SECRET;
 stream a0di { title "AMC"; input http://upstream/private; push udp://ens37@239.1.2.58:1058; }
-stream a0ek { title "A & E"; input http://one/; input http://two/; push udp://ens37@239.1.1.85:1085; }
+stream a0ek { title "A & E"; input http://one/; input http://two/; push udp://ens37@239.1.1.85:1085 disabled; }
 stream beta { disabled; title "Dos"; push udp://ens37@239.1.1.85:1085; push rtmp://server/SECRET; }
 stream empty { title "Sin salida"; meta program_id 1; }
 ''')
@@ -31,6 +31,7 @@ stream empty { title "Sin salida"; meta program_id 1; }
             res=self.run_tool(src,target,'--details'); self.assertEqual(res.returncode,0,res.stderr)
             self.assertIn('entrada_ya_en_astra: 1',res.stdout); self.assertIn('preparados: 3',res.stdout)
             self.assertIn('sin_salida_udp: 1',res.stdout); self.assertIn('conflictos_udp: 1',res.stdout)
+            self.assertIn('push_deshabilitados_en_flussonic: 1',res.stdout)
             self.assertNotIn('SOURCE_SECRET',res.stdout+res.stderr); self.assertNotIn('EXISTING_SECRET',res.stdout+res.stderr)
             res=self.run_tool(src,target,'--output',out); self.assertNotEqual(res.returncode,0); self.assertFalse(out.exists())
             res=self.run_tool(src,target,'--allow-duplicate-udp','--output',out); self.assertEqual(res.returncode,0,res.stderr)
