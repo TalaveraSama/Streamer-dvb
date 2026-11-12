@@ -5130,7 +5130,12 @@ std::string parserForCaps(GstCaps* caps, const std::string& capsString) {
             gst_structure_get_int(structure, "mpegversion", &mpegVersion);
             gst_structure_get_int(structure, "layer", &layer);
         }
-        if (mpegVersion == 4 || capsString.find("mpegversion=4") != std::string::npos ||
+        // AAC may be signalled as MPEG-2 (ADTS) or MPEG-4. Both use
+        // aacparse; omitting MPEG-2 drops that audio from remux/HLS branches.
+        if (mpegVersion == 2 || mpegVersion == 4 ||
+            capsString.find("mpegversion=2") != std::string::npos ||
+            capsString.find("mpegversion=(int)2") != std::string::npos ||
+            capsString.find("mpegversion=4") != std::string::npos ||
             capsString.find("mpegversion=(int)4") != std::string::npos) {
             return "aacparse";
         }
