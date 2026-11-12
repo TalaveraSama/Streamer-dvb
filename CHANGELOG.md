@@ -3,6 +3,22 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Las versiones siguen el esquema del proyecto original (`203.xx`).
 
+## [203.78-rc1] - 2026-11-10 — candidata de pruebas
+
+- Vistas previas de migración Astra y Flussonic sin ejecutar entradas ni
+  importar usuarios o claves globales. Flussonic conserva destinos UDP tras
+  confirmar la interfaz; ambas copias se generan aparte y quedan detenidas.
+
+- Mini-OSCam: tema adaptable con AdminLTE 3.2.0 servido localmente y selector
+  inglés/español. Se conserva el motor OSCam existente.
+- Navegación principal con opción inicial de español; la traducción del resto
+  del panel todavía está incompleta (ver `docs/INTERFAZ_MODERNIZACION.md`).
+- Se preservan lectores deshabilitados, `keepalive` y `detect`; los errores de
+  guardado ya no descartan el formulario. Archivos temporales de configuración
+  con permisos privados desde su creación.
+- Los instaladores desde fuente, CMake, Docker y binario incluyen los recursos
+  de la interfaz. El instalador universal requiere actualización adicional.
+
 ## [203.77] - 2026-11-10
 
 Corrección del instalador para Ubuntu 22.04 detectada por la CI recién añadida.

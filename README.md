@@ -1,6 +1,9 @@
 # TVStreammerSAT5
 
-**Версия: 203.77**
+**Versión: 203.78 (candidata de pruebas)**
+
+> **Prerrelease:** la traducción del panel y los importadores aún son parciales.
+> Realiza una copia de seguridad y pruebas controladas antes de usarlo en producción.
 
 > **203.77 — baseline de seguridad.** El panel ya no se instala con `admin/admin`:
 > en el primer arranque se genera una contraseña aleatoria y se imprime una vez en

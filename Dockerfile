@@ -72,6 +72,7 @@ RUN set -eux; \
     else echo "No supported AAC encoder was found in the runtime image" >&2; exit 1; fi
 
 COPY --from=build /src/build/TVStreammerSAT5 /app/TVStreammerSAT5
+COPY --from=build /src/web/vendor /app/web/vendor
 
 RUN mkdir -p /opt/tvstreammersat5/ca-plugins \
              /opt/TVStreammerSAT5/oscam-mini/config \

@@ -222,25 +222,32 @@ std::string OscamMiniManager::readFile(const std::string& path) {
 }
 
 bool OscamMiniManager::writeAtomic(const std::string& path, const std::string& content, std::string& error) {
+    std::string temp;
+    int fd = -1;
     try {
         fs::create_directories(fs::path(path).parent_path());
-        const std::string temp = path + ".tmp." + std::to_string(getpid());
-        {
-            std::ofstream file(temp, std::ios::trunc);
-            if (!file) {
-                error = "Не удалось создать временный файл " + temp;
-                return false;
-            }
-            file << content;
-            if (!file.good()) {
-                error = "Ошибка записи " + temp;
-                return false;
-            }
+        std::string pattern = path + ".tmp.XXXXXX";
+        std::vector<char> name(pattern.begin(), pattern.end());
+        name.push_back('\0');
+        // mkstemp creates the file with mode 0600 and cannot follow a pre-existing
+        // symlink. Credentials must never be briefly world-readable.
+        fd = mkstemp(name.data());
+        if (fd < 0) { error = "Unable to create temporary file: " + std::string(std::strerror(errno)); return false; }
+        temp = name.data();
+        std::size_t written = 0;
+        while (written < content.size()) {
+            const auto n = ::write(fd, content.data() + written, content.size() - written);
+            if (n < 0 && errno == EINTR) continue;
+            if (n <= 0) { error = "Failed to write " + temp; ::close(fd); ::unlink(temp.c_str()); return false; }
+            written += static_cast<std::size_t>(n);
         }
-        fs::permissions(temp, fs::perms::owner_read | fs::perms::owner_write, fs::perm_options::replace);
+        if (::close(fd) != 0) { fd = -1; error = "Failed to close " + temp; ::unlink(temp.c_str()); return false; }
+        fd = -1;
         fs::rename(temp, path);
         return true;
     } catch (const std::exception& ex) {
+        if (fd >= 0) ::close(fd);
+        if (!temp.empty()) ::unlink(temp.c_str());
         error = ex.what();
         return false;
     }
@@ -445,11 +452,11 @@ OscamMiniManager::Settings OscamMiniManager::loadLocked() {
 
 bool OscamMiniManager::saveLocked(const Settings& settings, std::string& error) {
     if (!isHex(settings.key, 28)) {
-        error = "DES key должен содержать ровно 28 HEX-символов";
+        error = "DES key must contain exactly 28 hexadecimal characters";
         return false;
     }
     if (settings.users.empty()) {
-        error = "Добавьте хотя бы одного пользователя Newcamd";
+        error = "Add at least one Newcamd user";
         return false;
     }
 
@@ -457,35 +464,35 @@ bool OscamMiniManager::saveLocked(const Settings& settings, std::string& error) 
     std::set<std::string> usernames;
     for (const auto& user : settings.users) {
         if (!isSafeName(user.user)) {
-            error = "Некорректное имя пользователя: " + user.user;
+            error = "Invalid username: " + user.user;
             return false;
         }
         if (user.password.empty() || user.password.size() > 64 || user.password.find('\n') != std::string::npos || user.password.find('\r') != std::string::npos) {
-            error = "Некорректный пароль пользователя " + user.user;
+            error = "Invalid password for user " + user.user;
             return false;
         }
         if (user.port < 1 || user.port > 65535) {
-            error = "Некорректный порт пользователя " + user.user;
+            error = "Invalid port for user " + user.user;
             return false;
         }
         if (!ports.insert(user.port).second) {
-            error = "Порт " + std::to_string(user.port) + " используется более одного раза";
+            error = "Port " + std::to_string(user.port) + " is used more than once";
             return false;
         }
         if (!usernames.insert(user.user).second) {
-            error = "Пользователь " + user.user + " указан более одного раза";
+            error = "User " + user.user + " is listed more than once";
             return false;
         }
         if (!isHex(user.caid, 4)) {
-            error = "CAID пользователя " + user.user + " должен содержать 4 HEX-символа";
+            error = "CAID for user " + user.user + " must contain 4 hexadecimal characters";
             return false;
         }
         if (!isHex(user.provider, 6)) {
-            error = "Provider пользователя " + user.user + " должен содержать 6 HEX-символов";
+            error = "Provider for user " + user.user + " must contain 6 hexadecimal characters";
             return false;
         }
         if (!validGroups(user.groups)) {
-            error = "Некорректные группы пользователя " + user.user;
+            error = "Invalid groups for user " + user.user;
             return false;
         }
     }
@@ -524,7 +531,7 @@ bool OscamMiniManager::saveLocked(const Settings& settings, std::string& error) 
     std::ostringstream server;
     for (const auto& reader : settings.readers) {
         if (reader.label.empty()) {
-            error = "У ридера отсутствует имя";
+            error = "Reader name is required";
             return false;
         }
         const bool pcsc = reader.protocol == "pcsc";
@@ -538,37 +545,37 @@ bool OscamMiniManager::saveLocked(const Settings& settings, std::string& error) 
                 return std::isdigit(c) != 0;
             }) && std::stoul(reader.device) <= 999;
         if ((pcsc && !pcscIndex) || (!pcsc && !serialDevice)) {
-            error = pcsc ? "Для PC/SC укажите индекс ридера (0, 1, ...): " + reader.label
-                         : "Некорректное устройство ридера " + reader.label;
+            error = pcsc ? "Specify a PC/SC reader index (0, 1, ...): " + reader.label
+                         : "Invalid device for reader " + reader.label;
             return false;
         }
         if (!isHex(reader.caid, 4)) {
-            error = "CAID ридера " + reader.label + " должен содержать 4 HEX-символа";
+            error = "CAID for reader " + reader.label + " must contain 4 hexadecimal characters";
             return false;
         }
         if (reader.group < 1 || reader.group > 64) {
-            error = "Некорректная группа ридера " + reader.label;
+            error = "Invalid group for reader " + reader.label;
             return false;
         }
         if (reader.mhz < 100 || reader.mhz > 2000 || reader.cardmhz < 100 || reader.cardmhz > 2000) {
-            error = "Некорректная частота ридера " + reader.label;
+            error = "Invalid frequency for reader " + reader.label;
             return false;
         }
         if (reader.protocol != "mouse" && reader.protocol != "phoenix" &&
             reader.protocol != "pcsc") {
-            error = "Поддерживаются mouse/phoenix/pcsc: " + reader.label;
+            error = "Supported protocols are mouse/phoenix/pcsc: " + reader.label;
             return false;
         }
         if (!reader.boxkey.empty() && !isHex(reader.boxkey, 16)) {
-            error = "BoxKey ридера " + reader.label + " должен содержать 16 HEX-символов";
+            error = "BoxKey for reader " + reader.label + " must contain 16 hexadecimal characters";
             return false;
         }
         if (!reader.rsakey.empty() && (reader.rsakey.size() < 32 || (reader.rsakey.size() % 2) != 0 || !std::all_of(reader.rsakey.begin(), reader.rsakey.end(), [](unsigned char c) { return std::isxdigit(c) != 0; }))) {
-            error = "RSAKey ридера " + reader.label + " должен содержать HEX-строку чётной длины";
+            error = "RSAKey for reader " + reader.label + " must contain an even-length hexadecimal string";
             return false;
         }
         if (!reader.auprovid.empty() && !isHex(reader.auprovid, 6)) {
-            error = "AU Provider ридера " + reader.label + " должен содержать 6 HEX-символов";
+            error = "AU Provider for reader " + reader.label + " must contain 6 hexadecimal characters";
             return false;
         }
 
@@ -664,16 +671,16 @@ Json::Value OscamMiniManager::statusLocked() {
     for (const auto& user : settings.users) {
         Json::Value item;
         std::string state = "down";
-        std::string detail = "OSCam-mini остановлен";
+        std::string detail = "OSCam-mini stopped";
 
         if (serviceActive) {
             const std::string portToken = ":" + std::to_string(user.port);
             if (established.find(portToken) != std::string::npos) {
                 state = "active";
-                detail = "Newcamd клиент подключён";
+                detail = "Newcamd client connected";
             } else {
                 state = "idle";
-                detail = "Ожидание подключения";
+                detail = "Waiting for connection";
             }
         }
 
@@ -688,11 +695,11 @@ Json::Value OscamMiniManager::statusLocked() {
     for (const auto& reader : settings.readers) {
         Json::Value item;
         std::string state = "down";
-        std::string detail = "OSCam-mini остановлен";
+        std::string detail = "OSCam-mini stopped";
 
         if (!reader.enabled) {
             state = "disabled";
-            detail = "Ридер отключён";
+            detail = "Reader disabled";
         } else if (serviceActive) {
             const std::string readyNeedle = reader.label + " [irdeto] ready for requests";
             const std::string readyMouseNeedle = reader.label + " [mouse] ready for requests";
@@ -711,16 +718,16 @@ Json::Value OscamMiniManager::statusLocked() {
 
             if (ready) {
                 state = "active";
-                detail = "Карта готова";
+                detail = "Card ready";
             } else if (error) {
                 state = "down";
-                detail = "Ошибка ридера";
+                detail = "Reader error";
             } else if (initializing) {
                 state = "idle";
-                detail = "Инициализация карты";
+                detail = "Initializing card";
             } else {
                 state = "idle";
-                detail = "Ожидание карты";
+                detail = "Waiting for card";
             }
         }
 
@@ -846,7 +853,7 @@ std::string OscamMiniManager::saveSettingsJson(const std::string& body) {
     const std::string restartOutput = run({"systemctl", "restart", kService}, &rc);
     output["ok"] = rc == 0;
     if (rc != 0) {
-        output["error"] = "Конфигурация сохранена, но OSCam-mini не перезапущен: " + trim(restartOutput);
+        output["error"] = "Configuration saved, but OSCam-mini could not be restarted: " + trim(restartOutput);
     }
     output["status"] = statusLocked();
     return json(output);
@@ -877,74 +884,166 @@ std::string OscamMiniManager::serviceActionJson(const std::string& body) {
 
 std::string OscamMiniManager::renderPage() {
     return R"HTML(<!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OSCam-mini</title>
+<link rel="stylesheet" href="/preview/adminlte-3.2.0.min.css">
 <style>
 body{font-family:Arial,sans-serif;background:#0f1218;color:#eee;margin:0}.w{max-width:1320px;margin:auto;padding:16px}.c{background:#161b25;border:1px solid #2a3241;border-radius:18px;padding:20px;margin:14px 0}.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}label{display:flex;flex-direction:column;gap:6px;font-size:14px;color:#c6d1e3}input,select{background:#0e131c;border:1px solid #334058;color:#fff;border-radius:10px;padding:11px;font-size:15px}button,a.btn{border:0;border-radius:10px;padding:11px 16px;background:#218cff;color:white;cursor:pointer;text-decoration:none;font-size:15px}.alt{background:#30394a!important}.danger{background:#56313a!important}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.grow{flex:1}.status-ok{color:#77e79d}.status-bad{color:#ff8b8b}.msg{margin-left:10px}.error{color:#ff8b8b}.success{color:#77e79d}pre{white-space:pre-wrap;background:#0b0f16;padding:12px;border-radius:10px;max-height:280px;overflow:auto}h2,h3{margin-top:0}.hint{color:#9ba9bd;font-size:13px;margin-top:8px}
 .compact-item{border:1px solid #2c3546;border-radius:12px;margin-top:10px;overflow:hidden;background:#111722}.compact-head{display:grid;grid-template-columns:18px minmax(130px,1.2fr) minmax(120px,1fr) minmax(135px,1fr) minmax(90px,.7fr) 24px;gap:10px;align-items:center;width:100%;box-sizing:border-box;padding:11px 13px;background:#171e2a;color:#eef4ff;border:0;border-radius:0;text-align:left;cursor:pointer}.compact-head:hover{background:#1b2432}.compact-main{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.compact-sub{color:#aebbd0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.compact-status{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chev{font-size:18px;color:#91a0b7;transition:transform .15s ease}.compact-item.open .chev{transform:rotate(90deg)}.compact-body{display:none;padding:14px;border-top:1px solid #2c3546}.compact-item.open .compact-body{display:block}.dot{width:10px;height:10px;border-radius:50%;display:inline-block;box-shadow:0 0 0 2px rgba(255,255,255,.08)}.dot-active{background:#49d17d}.dot-idle{background:#e8b844}.dot-down{background:#e25d66}.dot-disabled{background:#798394}.activity-active{color:#65df92}.activity-idle{color:#e8c45d}.activity-down{color:#ef7b83}.activity-disabled{color:#929cac}@media(max-width:760px){.compact-head{grid-template-columns:18px 1fr 24px}.compact-head .hide-small{display:none}}
+
+/* AdminLTE-based dashboard: custom dark theme and responsive layout. */
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#101827;color:#e5edf8}
+.w{max-width:1440px;padding:28px 32px}.w>.row:first-child{background:#19263a;border:1px solid #33445d;border-radius:16px;padding:18px 22px;box-shadow:0 10px 26px #0003}
+.c{background:#1a273b;border:1px solid #30415a;border-radius:14px;padding:22px;box-shadow:0 6px 18px #0002}
+.c h3{font-size:1.1rem;font-weight:700;letter-spacing:.01em}.c p,.hint{color:#afbed2}.g{gap:16px}
+.row{display:flex;gap:10px;margin:0;align-items:center}.row>*{padding:0}label{margin:0;color:#bdcbe0;font-weight:500}
+input,select{background:#111d2f;border:1px solid #40536c;color:#f6f9ff;min-width:0}input:focus,select:focus{outline:2px solid #60a5fa;outline-offset:1px}
+input[type=checkbox]{min-width:auto;accent-color:#3b82f6}button,a.btn{background:#2563eb;border-radius:8px;padding:10px 15px;font-weight:600;line-height:1.3}button:hover,a.btn:hover{filter:brightness(1.16);color:white}button:focus-visible,a:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}.alt{background:#334155!important}.danger{background:#9f394b!important}
+.compact-item{background:#132034;border-color:#34455e}.compact-head{background:#203047}.compact-head:hover{background:#2b405a}.compact-body{border-color:#34455e}pre{background:#0c1523;color:#d1dfef}.language-label{display:flex;flex-direction:row;align-items:center;gap:8px}.language-label select{padding:7px 10px}
+@media(max-width:760px){.w{padding:16px}.w>.row:first-child{padding:16px}.c{padding:16px}.language-label{margin-left:auto}}
 </style>
 </head>
 <body><div class="w">
-<div class="row"><a class="btn alt" href="/">← TVStreammerSAT5</a><h2 style="margin:0">OSCam-mini</h2><span id="state"></span></div>
-<div class="c"><div class="row"><button onclick="act('start')">Старт</button><button class="alt" onclick="act('restart')">Перезапуск</button><button class="alt" onclick="act('stop')">Стоп</button><button class="alt" onclick="loadAll()">Обновить</button></div><p>Конфиги: /opt/TVStreammerSAT5/oscam-mini/config</p></div>
+<div class="row"><a class="btn alt" href="/">← TVStreammerSAT5</a><h2 style="margin:0">OSCam-mini</h2><span id="state" role="status"></span><span class="grow"></span><label class="language-label">Language <select id="locale" aria-label="Language / Idioma"><option value="en">English</option><option value="es">Español</option></select></label></div>
+<div class="c"><div class="row"><button onclick="act('start')">Start</button><button class="alt" onclick="act('restart')">Restart</button><button class="alt" onclick="act('stop')">Stop</button><button class="alt" onclick="loadAll()">Refresh</button></div><p>Configuration: /opt/TVStreammerSAT5/oscam-mini/config</p></div>
 
 <div class="c">
   <h3>Newcamd</h3>
-  <div class="g"><label>Bind IP<input id="bind_ip"></label><label>DES key<input id="key"></label></div>
-  <div class="row" style="margin-top:16px"><h3 style="margin:0">Пользователи / порты</h3><button onclick="addUser()">+ Пользователь</button></div>
-  <div class="hint">Строка пользователя свернута по умолчанию. Нажмите на неё, чтобы открыть настройки.</div>
+  <div class="g"><label>Bind IP<input id="bind_ip"></label><label>DES key<input id="key" type="password" autocomplete="off"></label></div>
+  <label style="flex-direction:row;align-items:center;margin-top:12px"><input id="keepalive" type="checkbox"> Keepalive</label>
+  <div class="row" style="margin-top:16px"><h3 style="margin:0">Users / ports</h3><button onclick="addUser()">+ User</button></div>
+  <div class="hint">Users are collapsed by default. Select a row to edit its settings.</div>
   <div id="users"></div>
 </div>
 
-<div class="c"><div class="row"><h3 style="margin:0">Phoenix / Smartmouse</h3><button onclick="addReader()">+ Ридер</button></div><div class="hint">Зелёный — карта готова, жёлтый — инициализация/ожидание, красный — неактивен или ошибка.</div><div id="readers"></div></div>
-<div class="c"><button onclick="save()">Сохранить и перезапустить</button><span id="msg" class="msg"></span></div>
-<div class="c"><h3>Процесс / журнал</h3><pre id="proc"></pre><pre id="log"></pre></div>
+<div class="c"><div class="row"><h3 style="margin:0">Phoenix / Smartmouse</h3><button onclick="addReader()">+ Reader</button></div><div class="hint">Green: card ready; amber: initializing or waiting; red: stopped or error.</div><div id="readers"></div></div>
+<div class="c"><button onclick="save()">Save and restart</button><span id="msg" class="msg"></span></div>
+<div class="c"><h3>Process / log</h3><pre id="proc"></pre><pre id="log"></pre></div>
 </div>
 <script>
 let devices=[];
 let lastStatus={};
+
+const languageKey = 'tvstreammersat5-language';
+let locale = localStorage.getItem(languageKey) === 'es' ? 'es' : 'en';
+const spanish = new Map(Object.entries({
+  'Language':'Idioma', 'Keepalive':'Mantener conexión', 'Provider':'Proveedor', 'Group':'Grupo', 'Bind IP':'IP de escucha', 'Start':'Iniciar', 'Restart':'Reiniciar', 'Stop':'Detener', 'Refresh':'Actualizar',
+  'Configuration:':'Configuración:', 'Users / ports':'Usuarios / puertos', '+ User':'+ Usuario',
+  'Users are collapsed by default. Select a row to edit its settings.':'Los usuarios aparecen contraídos. Seleccione una fila para editarla.',
+  '+ Reader':'+ Lector', 'Green: card ready; amber: initializing or waiting; red: stopped or error.':'Verde: tarjeta lista; amarillo: iniciando o en espera; rojo: detenido o error.',
+  'Save and restart':'Guardar y reiniciar', 'Process / log':'Proceso / registro', 'Username':'Usuario', 'Password':'Contraseña',
+  'Port':'Puerto', 'Groups':'Grupos', 'Remove user':'Eliminar usuario', 'No device selected':'Ningún dispositivo seleccionado',
+  'Name':'Nombre', 'Device / PC/SC index':'Dispositivo / índice PC/SC', 'Protocol':'Protocolo',
+  'Remove reader':'Eliminar lector', 'Enabled':'Habilitado', 'Inactive':'Inactivo', 'Running':'En ejecución', 'Stopped':'Detenido',
+  'Process not running':'Proceso detenido', 'Saving…':'Guardando…', 'Saved and restarted':'Guardado y reiniciado', 'Error':'Error',
+  'OSCam-mini stopped':'OSCam-mini detenido', 'Newcamd client connected':'Cliente Newcamd conectado',
+  'Waiting for connection':'Esperando conexión', 'Reader disabled':'Lector deshabilitado', 'Card ready':'Tarjeta lista',
+  'Reader error':'Error del lector', 'Initializing card':'Inicializando tarjeta', 'Waiting for card':'Esperando tarjeta',
+  'Connection error':'Error de conexión', 'active':'activo', 'inactive':'inactivo', 'failed':'fallido',
+  'DES key must contain exactly 28 hexadecimal characters':'La clave DES debe contener exactamente 28 caracteres hexadecimales',
+  'Add at least one Newcamd user':'Agregue al menos un usuario Newcamd', 'Reader name is required':'El nombre del lector es obligatorio',
+  '/dev/ttyUSB0 or 0':'/dev/ttyUSB0 o 0'
+}));
+function tr(value) {
+  const text = String(value ?? '');
+  if (locale !== 'es') return text;
+  if (spanish.has(text)) return spanish.get(text);
+  const replacements = [
+    ['Unable to create temporary file ', 'No se pudo crear el archivo temporal '], ['Failed to write ', 'Error al escribir '],
+    ['Invalid username: ', 'Nombre de usuario inválido: '], ['Invalid password for user ', 'Contraseña inválida para el usuario '],
+    ['Invalid port for user ', 'Puerto inválido para el usuario '], ['Invalid groups for user ', 'Grupos inválidos para el usuario '],
+    ['Specify a PC/SC reader index (0, 1, ...): ', 'Indique el índice del lector PC/SC (0, 1, ...): '],
+    ['Invalid device for reader ', 'Dispositivo inválido para el lector '], ['Invalid group for reader ', 'Grupo inválido para el lector '],
+    ['Invalid frequency for reader ', 'Frecuencia inválida para el lector '], ['Supported protocols are mouse/phoenix/pcsc: ', 'Protocolos admitidos: mouse/phoenix/pcsc: '],
+    ['Configuration saved, but OSCam-mini could not be restarted: ', 'Configuración guardada, pero no se pudo reiniciar OSCam-mini: '],
+    [' must contain 4 hexadecimal characters', ' debe contener 4 caracteres hexadecimales'],
+    [' must contain 6 hexadecimal characters', ' debe contener 6 caracteres hexadecimales'],
+    [' must contain 16 hexadecimal characters', ' debe contener 16 caracteres hexadecimales'],
+    [' must contain an even-length hexadecimal string', ' debe contener una cadena hexadecimal de longitud par'],
+    ['CAID for user ', 'CAID del usuario '], ['Provider for user ', 'Proveedor del usuario '],
+    ['CAID for reader ', 'CAID del lector '], ['BoxKey for reader ', 'BoxKey del lector '],
+    ['RSAKey for reader ', 'RSAKey del lector '], ['AU Provider for reader ', 'Proveedor AU del lector '],
+    [' is used more than once', ' se usa más de una vez'], [' is listed more than once', ' aparece más de una vez'],
+    ['Port ', 'Puerto '], ['User ', 'Usuario ']
+  ];
+  return replacements.reduce((result, [from,to]) => result.replace(from,to), text);
+}
+const originals = new WeakMap();
+function localizeNode(node) {
+  if (node.nodeType !== Node.TEXT_NODE || !node.parentElement || ['SCRIPT','STYLE','PRE'].includes(node.parentElement.tagName) || node.parentElement.closest('.user-summary-name,.reader-summary-label,.reader-summary-device')) return;
+  const value = node.nodeValue || '';
+  const m = value.match(/^(\s*)(.*?)(\s*)$/s); if (!m || !m[2]) return;
+  let entry = originals.get(node);
+  if (!entry || (m[2] !== entry.last && m[2] !== entry.source)) entry = {source:m[2], last:m[2]};
+  entry.last = tr(entry.source); originals.set(node, entry);
+  const next = m[1] + entry.last + m[3]; if (value !== next) node.nodeValue = next;
+}
+function localize(root) {
+  if (root.nodeType === Node.TEXT_NODE) return localizeNode(root);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n;
+  while ((n = walker.nextNode())) localizeNode(n);
+  root.querySelectorAll?.('[placeholder]').forEach(el => {
+    if (!el.dataset.originalPlaceholder) el.dataset.originalPlaceholder = el.placeholder;
+    el.placeholder = tr(el.dataset.originalPlaceholder);
+  });
+}
+const observer = new MutationObserver(records => records.forEach(record => {
+  if (record.type === 'characterData') localizeNode(record.target);
+  else record.addedNodes.forEach(localize);
+}));
+observer.observe(document.body, {subtree:true, childList:true, characterData:true});
+function setLocale(value) {
+  locale = value === 'es' ? 'es' : 'en';
+  localStorage.setItem(languageKey, locale);
+  document.documentElement.lang = locale;
+  document.getElementById('locale').value = locale;
+  localize(document.body);
+}
+document.getElementById('locale').addEventListener('change', e => setLocale(e.target.value));
+setLocale(locale);
+
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-async function api(url,opt){const r=await fetch(url,opt);let data;try{data=await r.json()}catch(e){throw new Error(await r.text()||('HTTP '+r.status))}return data}
+async function api(url,opt){const r=await fetch(url,opt);const text=await r.text();let data;try{data=JSON.parse(text)}catch(e){throw new Error(text||('HTTP '+r.status))}if(!r.ok)throw new Error(data.error||('HTTP '+r.status));return data}
 function stateClass(s){return ['active','idle','down','disabled'].includes(s)?s:'down'}
 function activityDot(s){s=stateClass(s);return `<span class="dot dot-${s}"></span>`}
-function toggleItem(head){head.closest('.compact-item').classList.toggle('open')}
+function toggleItem(head){const open=head.closest('.compact-item').classList.toggle('open');head.setAttribute('aria-expanded',String(open))}
 
 function userHtml(u={},i=0){const name=u.user||('user'+(i+1));return `<div class="compact-item user" data-user="${esc(name)}">
-<button type="button" class="compact-head" onclick="toggleItem(this)">
+<button type="button" class="compact-head" aria-expanded="false" onclick="toggleItem(this)">
 <span class="activity-dot">${activityDot('down')}</span>
 <span class="compact-main user-summary-name">${esc(name)}</span>
 <span class="compact-sub hide-small user-summary-endpoint">${esc(u.port||11220+i)} · ${esc(u.caid||'0652')}:${esc(u.provider||'000000')}</span>
 <span class="compact-sub hide-small user-summary-groups">group ${esc(u.groups||'1')}</span>
-<span class="compact-status hide-small activity-text">неактивен</span>
+<span class="compact-status hide-small activity-text">Inactive</span>
 <span class="chev">›</span>
 </button>
 <div class="compact-body"><div class="g">
-<label>Пользователь<input class="user-name" value="${esc(name)}"></label>
-<label>Пароль<input class="user-pass" type="password" value="${esc(u.password||'')}"></label>
-<label>Порт<input class="user-port" type="number" min="1" max="65535" value="${esc(u.port||11220+i)}"></label>
+<label>Username<input class="user-name" value="${esc(name)}"></label>
+<label>Password<input class="user-pass" type="password" value="${esc(u.password||'')}"></label>
+<label>Port<input class="user-port" type="number" min="1" max="65535" value="${esc(u.port||11220+i)}"></label>
 <label>CAID<input class="user-caid" maxlength="4" value="${esc(u.caid||'0652')}"></label>
 <label>Provider<input class="user-provider" maxlength="6" value="${esc(u.provider||'000000')}"></label>
-<label>Группы<input class="user-groups" value="${esc(u.groups||'1')}" placeholder="6,12"></label>
-</div><div class="row" style="margin-top:10px"><label style="flex-direction:row;align-items:center"><input class="user-au" type="checkbox" ${u.au!==false?'checked':''}> AU/EMM</label><button class="danger" onclick="this.closest('.user').remove()">Удалить пользователя</button></div></div></div>`}
+<label>Groups<input class="user-groups" value="${esc(u.groups||'1')}" placeholder="6,12"></label>
+</div><div class="row" style="margin-top:10px"><label style="flex-direction:row;align-items:center"><input class="user-au" type="checkbox" ${u.au!==false?'checked':''}> AU/EMM</label><button class="danger" onclick="this.closest('.user').remove()">Remove user</button></div></div></div>`}
 function addUser(u={}){const box=document.createElement('div');box.innerHTML=userHtml(u,document.querySelectorAll('.user').length);users.append(...box.childNodes);applyActivity(lastStatus)}
 
-function readerHtml(r={},i=0){const label=r.label||('Reader'+(i+1));return `<div class="compact-item reader" data-reader="${esc(label)}">
-<button type="button" class="compact-head" onclick="toggleItem(this)">
+function readerHtml(r={},i=0){const label=r.label||('Reader'+(i+1));return `<div class="compact-item reader" data-reader="${esc(label)}" data-detect="${esc(r.detect||'cd')}">
+<button type="button" class="compact-head" aria-expanded="false" onclick="toggleItem(this)">
 <span class="activity-dot">${activityDot('down')}</span>
 <span class="compact-main reader-summary-label">${esc(label)}</span>
-<span class="compact-sub hide-small reader-summary-device">${esc(r.device||'устройство не выбрано')}</span>
+<span class="compact-sub hide-small reader-summary-device">${esc(r.device||'No device selected')}</span>
 <span class="compact-sub hide-small reader-summary-ca">CAID ${esc(r.caid||'0652')} · group ${esc(r.group||1)}</span>
-<span class="compact-status hide-small activity-text">неактивен</span>
+<span class="compact-status hide-small activity-text">Inactive</span>
 <span class="chev">›</span>
 </button>
 <div class="compact-body"><div class="g">
-<label>Имя<input class="reader-label" value="${esc(label)}"></label>
-<label>Устройство / индекс PC/SC<input class="reader-device" value="${esc(r.device||'')}" placeholder="/dev/ttyUSB0 или 0"></label>
+<label>Name<input class="reader-label" value="${esc(label)}"></label>
+<label>Device / PC/SC index<input class="reader-device" value="${esc(r.device||'')}" placeholder="/dev/ttyUSB0 or 0"></label>
 <label>CAID<input class="reader-caid" maxlength="4" value="${esc(r.caid||'0652')}"></label>
-<label>Протокол<select class="reader-protocol"><option value="mouse" ${r.protocol==='mouse'?'selected':''}>mouse</option><option value="phoenix" ${r.protocol==='phoenix'?'selected':''}>phoenix</option><option value="pcsc" ${r.protocol==='pcsc'?'selected':''}>PC/SC (OMNIKEY)</option></select></label>
+<label>Protocol<select class="reader-protocol"><option value="mouse" ${r.protocol==='mouse'?'selected':''}>mouse</option><option value="phoenix" ${r.protocol==='phoenix'?'selected':''}>phoenix</option><option value="pcsc" ${r.protocol==='pcsc'?'selected':''}>PC/SC (OMNIKEY)</option></select></label>
 <label>MHz (Phoenix)<input class="reader-mhz" type="number" value="${esc(r.mhz||600)}"></label>
 <label>Card MHz<input class="reader-cardmhz" type="number" value="${esc(r.cardmhz||600)}"></label>
 <label>Group<input class="reader-group" type="number" min="1" max="64" value="${esc(r.group||1)}"></label>
@@ -953,18 +1052,18 @@ function readerHtml(r={},i=0){const label=r.label||('Reader'+(i+1));return `<div
 <label>AU Provider<input class="reader-auprovid" maxlength="6" value="${esc(r.auprovid||'')}" placeholder="000652"></label>
 <label>EMM cache<input class="reader-emmcache" value="${esc(r.emmcache||'1,3,2,0')}" placeholder="1,3,2,0"></label>
 <label style="grid-column:1/-1">RSAKey<input class="reader-rsakey" autocomplete="off" value="${esc(r.rsakey||'')}" placeholder="HEX RSA key"></label>
-</div><div class="row" style="margin-top:10px"><button class="danger" onclick="this.closest('.reader').remove()">Удалить ридер</button></div></div></div>`}
+</div><div class="row" style="margin-top:10px"><label style="flex-direction:row;align-items:center"><input class="reader-enabled" type="checkbox" ${r.enabled!==false?'checked':''}> Enabled</label><button class="danger" onclick="this.closest('.reader').remove()">Remove reader</button></div></div></div>`}
 function addReader(r={}){const box=document.createElement('div');box.innerHTML=readerHtml(r,document.querySelectorAll('.reader').length);readers.append(...box.childNodes);applyActivity(lastStatus)}
 
-function setActivity(el,info){if(!el)return;const s=stateClass(info?.state||'down');const dot=el.querySelector('.activity-dot');const txt=el.querySelector('.activity-text');if(dot)dot.innerHTML=activityDot(s);if(txt){txt.textContent=info?.detail||'неактивен';txt.className=`compact-status hide-small activity-text activity-${s}`}}
+function setActivity(el,info){if(!el)return;const s=stateClass(info?.state||'down');const dot=el.querySelector('.activity-dot');const txt=el.querySelector('.activity-text');if(dot)dot.innerHTML=activityDot(s);if(txt){txt.textContent=info?.detail||'Inactive';txt.className=`compact-status hide-small activity-text activity-${s}`}}
 function applyActivity(st){lastStatus=st||{};document.querySelectorAll('.user').forEach(el=>setActivity(el,(st.user_activity||{})[el.dataset.user]));document.querySelectorAll('.reader').forEach(el=>setActivity(el,(st.reader_activity||{})[el.dataset.reader]))}
-async function refreshStatus(){try{const st=await api('/api/oscam-mini/status');lastStatus=st;state.textContent=st.service_active?'● работает':'● '+(st.service_state||'остановлен');state.className=st.service_active?'status-ok':'status-bad';proc.textContent=st.process||'процесс не запущен';log.textContent=st.log||'';applyActivity(st)}catch(e){}}
+async function refreshStatus(){try{const st=await api('/api/oscam-mini/status');lastStatus=st;state.textContent=st.service_active?'● Running':'● '+(st.service_state||'Stopped');state.className=st.service_active?'status-ok':'status-bad';proc.textContent=st.process||'Process not running';log.textContent=st.log||'';applyActivity(st)}catch(e){state.textContent='● Connection error';state.className='status-bad';}}
 
-async function loadAll(){try{const st=await api('/api/oscam-mini/status');lastStatus=st;devices=st.devices||[];state.textContent=st.service_active?'● работает':'● '+(st.service_state||'остановлен');state.className=st.service_active?'status-ok':'status-bad';proc.textContent=st.process||'процесс не запущен';log.textContent=st.log||'';const s=await api('/api/oscam-mini/settings');bind_ip.value=s.bind_ip||'127.0.0.1';key.value=s.key||'';users.innerHTML='';(s.users||[]).forEach(addUser);readers.innerHTML='';(s.readers||[]).forEach(addReader);applyActivity(st)}catch(e){msg.textContent=e.message;msg.className='msg error'}}
+async function loadAll(){try{const st=await api('/api/oscam-mini/status');lastStatus=st;devices=st.devices||[];state.textContent=st.service_active?'● Running':'● '+(st.service_state||'Stopped');state.className=st.service_active?'status-ok':'status-bad';proc.textContent=st.process||'Process not running';log.textContent=st.log||'';const s=await api('/api/oscam-mini/settings');bind_ip.value=s.bind_ip||'127.0.0.1';key.value=s.key||'';keepalive.checked=s.keepalive!==false;users.innerHTML='';(s.users||[]).forEach(addUser);readers.innerHTML='';(s.readers||[]).forEach(addReader);applyActivity(st)}catch(e){msg.textContent=e.message;msg.className='msg error'}}
 
-async function save(){const userRows=[...document.querySelectorAll('.user')].map(e=>({user:e.querySelector('.user-name').value,password:e.querySelector('.user-pass').value,port:+e.querySelector('.user-port').value,caid:e.querySelector('.user-caid').value.trim(),provider:e.querySelector('.user-provider').value.trim(),groups:e.querySelector('.user-groups').value.trim(),au:e.querySelector('.user-au').checked}));const readerRows=[...document.querySelectorAll('.reader')].map(e=>({label:e.querySelector('.reader-label').value,device:e.querySelector('.reader-device').value,caid:e.querySelector('.reader-caid').value.trim(),protocol:e.querySelector('.reader-protocol').value,detect:'cd',mhz:+e.querySelector('.reader-mhz').value,cardmhz:+e.querySelector('.reader-cardmhz').value,group:+e.querySelector('.reader-group').value,ident:e.querySelector('.reader-ident').value.trim(),boxkey:e.querySelector('.reader-boxkey').value.trim(),rsakey:e.querySelector('.reader-rsakey').value.trim(),auprovid:e.querySelector('.reader-auprovid').value.trim(),emmcache:e.querySelector('.reader-emmcache').value.trim(),enabled:true}));const body={bind_ip:bind_ip.value.trim(),key:key.value.trim(),keepalive:true,users:userRows,readers:readerRows};msg.textContent='Сохранение…';msg.className='msg';try{const x=await api('/api/oscam-mini/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});msg.textContent=x.ok?'Сохранено и перезапущено':(x.error||'Ошибка');msg.className=x.ok?'msg success':'msg error';await loadAll()}catch(e){msg.textContent=e.message;msg.className='msg error'}}
+async function save(){const userRows=[...document.querySelectorAll('.user')].map(e=>({user:e.querySelector('.user-name').value,password:e.querySelector('.user-pass').value,port:+e.querySelector('.user-port').value,caid:e.querySelector('.user-caid').value.trim(),provider:e.querySelector('.user-provider').value.trim(),groups:e.querySelector('.user-groups').value.trim(),au:e.querySelector('.user-au').checked}));const readerRows=[...document.querySelectorAll('.reader')].map(e=>({label:e.querySelector('.reader-label').value,device:e.querySelector('.reader-device').value,caid:e.querySelector('.reader-caid').value.trim(),protocol:e.querySelector('.reader-protocol').value,detect:e.dataset.detect||'cd',mhz:+e.querySelector('.reader-mhz').value,cardmhz:+e.querySelector('.reader-cardmhz').value,group:+e.querySelector('.reader-group').value,ident:e.querySelector('.reader-ident').value.trim(),boxkey:e.querySelector('.reader-boxkey').value.trim(),rsakey:e.querySelector('.reader-rsakey').value.trim(),auprovid:e.querySelector('.reader-auprovid').value.trim(),emmcache:e.querySelector('.reader-emmcache').value.trim(),enabled:e.querySelector('.reader-enabled').checked}));const body={bind_ip:bind_ip.value.trim(),key:key.value.trim(),keepalive:keepalive.checked,users:userRows,readers:readerRows};msg.textContent='Saving…';msg.className='msg';try{const x=await api('/api/oscam-mini/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});msg.textContent=x.ok?'Saved and restarted':(x.error||'Error');msg.className=x.ok?'msg success':'msg error';if(x.ok)await loadAll()}catch(e){msg.textContent=e.message;msg.className='msg error'}}
 
-async function act(action){try{const x=await api('/api/oscam-mini/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});if(!x.ok){msg.textContent=x.error||'Ошибка';msg.className='msg error'}await loadAll()}catch(e){msg.textContent=e.message;msg.className='msg error'}}
+async function act(action){try{const x=await api('/api/oscam-mini/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});if(!x.ok){msg.textContent=x.error||'Error';msg.className='msg error'}await refreshStatus()}catch(e){msg.textContent=e.message;msg.className='msg error'}}
 loadAll();
 setInterval(refreshStatus,3000);
 </script>

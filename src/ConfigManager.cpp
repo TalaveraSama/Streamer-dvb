@@ -614,7 +614,7 @@ AppConfig AppConfig::fromJson(const Json::Value& root) {
     config.requireStreamAuth = root.get("require_stream_auth", false).asBool();
     config.maxRequestBodyMb = clampRequestBodyMb(root.get("max_request_body_mb", 64).asInt());
     config.language = root.get("language", "en").asString();
-    if (config.language != "ru" && config.language != "en") {
+    if (config.language != "ru" && config.language != "en" && config.language != "es") {
         config.language = "en";
     }
     config.telegramToken = root.get("telegram_token", "").asString();

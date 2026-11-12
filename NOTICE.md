@@ -9,6 +9,7 @@
 | TVStreamer5 ramas antiguas | `legacy/tvstreamer5/snapshots/*` | `Monkipnet/TVStreamer5` @ `b58588f`, `a17cc99` | **Sin licencia** |
 | OSCam-mini (vendorizado) | `third_party/oscam-mini/` | Proyecto OSCam | **GPL** — ver `third_party/oscam-mini/COPYING` |
 | hls.js | `web/vendor/hls.min.js` | video-dev/hls.js | Apache-2.0 — ver `web/vendor/LICENSE.hls.js` |
+| AdminLTE 3.2.0 | `web/vendor/adminlte-3.2.0.min.css` | ColorlibHQ/AdminLTE | MIT — ver `web/vendor/LICENSE.adminlte` |
 | mpegts.js | `web/vendor/mpegts.min.js` | xqq/mpegts.js | Apache-2.0 — ver `web/vendor/LICENSE.mpegts.js` |
 | GStreamer, Boost, OpenSSL, jsoncpp, libcurl, libdvbcsa | enlazados dinámicamente | proyectos respectivos | LGPL/Boost/Apache/MIT según componente; **no** se redistribuyen aquí |
 

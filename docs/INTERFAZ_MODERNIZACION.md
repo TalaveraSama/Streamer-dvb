@@ -1,0 +1,45 @@
+# Modernización de la interfaz (trabajo en curso)
+
+## Idiomas
+
+El botón de idioma del panel principal alterna inglés, español y ruso. La
+preferencia se guarda en el navegador y se sincroniza con la configuración del
+panel. La navegación principal y varios controles están traducidos al español.
+**La traducción del panel principal aún no es completa:** algunos formularios,
+mensajes dinámicos y respuestas del servidor pueden seguir apareciendo en inglés
+o ruso. Las cadenas sin traducción requieren revisión individual; no se debe
+interpretar la selección de español como traducción integral.
+
+La página `/oscam-mini` dispone de selector inglés/español independiente que
+comparte la preferencia del navegador. Sus controles y mensajes propios están en
+inglés o español. El registro de OSCam y las respuestas de herramientas del
+sistema se muestran sin alterar y pueden estar en otro idioma. Cambiar el
+idioma no vuelve a cargar el formulario ni descarta los cambios pendientes.
+
+## Mini-OSCam
+
+La pantalla usa CSS de AdminLTE 3.2.0 (licencia MIT incluida en
+`web/vendor/LICENSE.adminlte`), servido localmente sin CDN. Se conserva el
+motor OSCam existente y sus funciones Newcamd, Phoenix y PC/SC; no es un motor
+nuevo. Se ha corregido el guardado del estado habilitado/deshabilitado de los
+lectores y de `keepalive` y `detect`. Un error de validación ya no descarta los
+valores escritos en el formulario. Los archivos temporales de configuración se
+crean con permisos privados antes de escribir credenciales.
+
+Estos cambios necesitan compilación y pruebas en Ubuntu 22.04/24.04 y en un
+servidor con hardware real antes de distribuirse. La instalación desde fuente,
+CMake, Docker y el instalador binario copian los recursos de interfaz. El
+instalador universal anterior todavía no se ha adaptado para esta versión.
+
+## Observaciones de revisión pendientes
+
+- Las tres configuraciones OSCam se sustituyen individualmente: un fallo a
+  mitad del guardado puede dejar una actualización parcial. Respaldar la
+  configuración antes de realizar cambios importantes; falta una operación
+  transaccional con recuperación.
+- El indicador de conexión Newcamd es una estimación basada en `ss` y no prueba
+  que el usuario esté autorizado. La detección de estado del lector depende de
+  textos recientes del registro y no sustituye una comprobación del hardware.
+- Quedan traducciones y formularios del panel principal por revisar, además de
+  pruebas funcionales de todas las operaciones con dispositivos físicos.
+- No exponer el puerto 9000 directamente a Internet sin TLS; ver `SECURITY.md`.

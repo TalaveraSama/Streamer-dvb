@@ -216,6 +216,12 @@ fi
 
 run install -d -m 0755 "$INSTALL_DIR"
 run install -m 0755 "$MAIN_BINARY" "$INSTALL_DIR/$APP_NAME"
+if [[ -d "$SOURCE_DIR/web/vendor" ]]; then
+    run install -d -m 0755 "$INSTALL_DIR/web/vendor"
+    for asset in mpegts.min.js hls.min.js adminlte-3.2.0.min.css LICENSE.adminlte; do
+        [[ ! -f "$SOURCE_DIR/web/vendor/$asset" ]] || run install -m 0644 "$SOURCE_DIR/web/vendor/$asset" "$INSTALL_DIR/web/vendor/$asset"
+    done
+fi
 
 if [[ -n "$CA_PLUGIN" ]]; then
     run install -d -m 0755 "$INSTALL_DIR/ca-plugins"

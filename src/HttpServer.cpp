@@ -234,7 +234,7 @@ std::string cleanHlsRelativePath(const std::string& value) {
 // Browser-only libraries are kept on disk next to the program, not loaded from CDN.
 // No preview code is executed until an authenticated administrator opens a tile.
 std::string readPreviewVendorLibrary(const std::string& fileName) {
-    if (fileName != "mpegts.min.js" && fileName != "hls.min.js") return {};
+    if (fileName != "mpegts.min.js" && fileName != "hls.min.js" && fileName != "adminlte-3.2.0.min.css") return {};
     std::error_code ec;
     const std::filesystem::path exe = std::filesystem::read_symlink("/proc/self/exe", ec);
     if (ec || exe.empty()) return {};
@@ -989,7 +989,8 @@ void HttpServer::handleSession(tcp::socket socket) {
             } else if (target == "/api/oscam-mini/settings") {
                 res.set(http::field::content_type, "application/json");
                 res.body() = OscamMiniManager::instance().settingsJson();
-            } else if (target == "/preview/mpegts.min.js" ||
+            } else if (target == "/preview/adminlte-3.2.0.min.css" ||
+                       target == "/preview/mpegts.min.js" ||
                        target == "/preview/hls.min.js") {
                 const std::string name = target.substr(std::string("/preview/").size());
                 std::string script = readPreviewVendorLibrary(name);
@@ -998,7 +999,7 @@ void HttpServer::handleSession(tcp::socket socket) {
                     res.set(http::field::content_type, "text/plain; charset=UTF-8");
                     res.body() = "Preview library is not installed. Run scripts/vendor_preview_libs.sh.";
                 } else {
-                    res.set(http::field::content_type, "application/javascript; charset=UTF-8");
+                    res.set(http::field::content_type, name == "adminlte-3.2.0.min.css" ? "text/css; charset=UTF-8" : "application/javascript; charset=UTF-8");
                     res.set(http::field::cache_control, "private, max-age=3600");
                     res.body() = std::move(script);
                 }
@@ -3942,8 +3943,31 @@ Object.assign(translations.ru, {
   noUnknownConnections:'\u041d\u0435\u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0445 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0439 \u043d\u0435\u0442',
   streamNumber:'\u041f\u043e\u0442\u043e\u043a'
 });
+
+// Spanish translations for navigation and commonly used dashboard controls.
+// Text covered by the existing Russian-to-English dictionary falls back to English.
+// Other legacy strings still need a dedicated translation.
+translations.es = {
+  subtitle:'Supervisión de transmisiones y control de flujos', total:'Total:', active:'Activos:', network:'Red', system:'Sistema', user:'Usuario', addStream:'+ Agregar flujo', addChannel:'+ Agregar canal',
+  interfacesNotFound:'No se encontraron interfaces', output:'Salida', activeInput:'Entrada activa', primary:'Principal', backup:'Respaldo', sid:'SID', bitrateIn:'Bitrate de entrada', bitrateOut:'Bitrate de salida', status:'Estado',
+  online:'En línea', backupOnline:'Respaldo', offline:'Desconectado', start:'Iniciar', stop:'Detener', edit:'Editar', chart:'Gráfica', delete:'Eliminar flujo', removeConfirm:'Eliminar flujo',
+  restartProgram:'Reiniciar el programa', restartConfirm:'¿Reiniciar el servicio TVStreammerSAT5?', restarting:'Reiniciando el servicio...',
+  networkLoad:'Carga de interfaces de red', interface:'Interfaz', incoming:'Entrante', outgoing:'Saliente', close:'Cerrar',
+  about:'Acerca de', product:'Producto', version:'Versión', name:'Nombre', country:'País', contactEmail:'Correo de contacto', donate:'Donar', donateQr:'Código QR para donar', donateWallet:'Cartera de Telegram', cancel:'Cancelar', save:'Guardar', userTitle:'Usuario', telegram:'API de Telegram', quality:'Calidad del flujo', playlist:'Lista de VLC', subscribers:'Suscriptores', streams:'Flujos', filtering:'Activar filtro de IP', addSubscriber:'Agregar suscriptor', primaryIp:'IP principal', backupIp:'IP de respaldo', addedAt:'Fecha de alta', subscriberName:'Nombre del suscriptor', noSubscribers:'No hay suscriptores', noStreams:'No hay flujos configurados', enabled:'Habilitado', disabled:'Deshabilitado', exportSubscribers:'Exportar TXT', session:'Sesión', activeSession:'En línea', offlineSession:'Desconectado', resetSession:'Restablecer',
+  connectionMonitoring:'Conexiones no registradas', monitoringHint:'Se muestran las sesiones HTTP, HLS y SRT. No es posible detectar receptores UDP.', clientIp:'IP del cliente', protocol:'Protocolo', connections:'Conexiones', actions:'Acciones', addFromConnection:'Agregar', blockClient:'Bloquear', blockedIps:'IP bloqueadas', unblockClient:'Desbloquear', noUnknownConnections:'No hay conexiones no registradas', streamNumber:'Flujo'
+};
+const uiEnToEs = new Map(Object.entries({
+  'Test':'Prueba', 'Replacement file':'Archivo de reemplazo', 'Backup':'Respaldo', 'Primary':'Principal', 'Not required':'No requerido',
+  'Output interface':'Interfaz de salida', 'Output formats':'Formatos de salida', 'Player URL':'URL del reproductor', 'Transcoding':'Transcodificación',
+  'Add channel — DVB-S/S2':'Agregar canal — DVB-S/S2', 'Stream quality':'Calidad del flujo', 'HTTP preview':'Vista previa HTTP',
+  'Double-click — preview':'Doble clic: vista previa', 'Connecting to HTTP stream…':'Conectando al flujo HTTP…',
+  'HTTP stream preview':'Vista previa del flujo HTTP', 'Close preview':'Cerrar vista previa', 'Cancel':'Cancelar', 'Save':'Guardar', 'Delete':'Eliminar',
+  'Enabled':'Habilitado', 'Disabled':'Deshabilitado', 'Name':'Nombre', 'Password':'Contraseña', 'Username':'Usuario', 'Port':'Puerto',
+  'Network':'Red', 'Status':'Estado', 'Input':'Entrada', 'Output':'Salida', 'Add':'Agregar', 'Edit':'Editar', 'Start':'Iniciar', 'Stop':'Detener'
+}));
+
 function normalizeLanguage(value) {
-  return value === 'ru' ? 'ru' : 'en';
+  return ['ru', 'en', 'es'].includes(value) ? value : 'en';
 }
 let language = normalizeLanguage(localStorage.getItem('tvstreammersat5-language') || 'en');
 
@@ -4231,12 +4255,13 @@ const uiLocalizedAttributes = ['title', 'placeholder', 'aria-label'];
 
 function translateUiText(value) {
   const source = String(value ?? '');
-  if (language !== 'en' || !/[А-Яа-яЁё]/.test(source)) return source;
+  if (language === 'ru') return source;
   const match = source.match(/^(\s*)([\s\S]*?)(\s*)$/);
   const lead = match ? match[1] : '';
   const core = match ? match[2] : source;
   const tail = match ? match[3] : '';
-  if (uiRuToEn.has(core)) return lead + uiRuToEn.get(core) + tail;
+  if (!/[А-Яа-яЁё]/.test(core)) return lead + (language === 'es' ? (uiEnToEs.get(core) || core) : core) + tail;
+  if (uiRuToEn.has(core)) { const english = uiRuToEn.get(core); return lead + (language === 'es' ? (uiEnToEs.get(english) || english) : english) + tail; }
 
   let text = core;
   const replacements = [
@@ -4282,17 +4307,13 @@ function translateUiText(value) {
 }
 
 function localizeUiTextNode(node) {
-  if (!node || node.nodeType !== Node.TEXT_NODE || ['SCRIPT','STYLE'].includes(node.parentElement?.tagName)) return;
+  if (!node || node.nodeType !== Node.TEXT_NODE || ['SCRIPT','STYLE'].includes(node.parentElement?.tagName) || node.parentElement?.closest('[data-i18n]')) return;
   const current = node.nodeValue || '';
-  if (language === 'en') {
-    if (/[А-Яа-яЁё]/.test(current)) uiOriginalText.set(node, current);
-    const source = uiOriginalText.get(node) ?? current;
-    const translated = translateUiText(source);
-    if (translated !== current) node.nodeValue = translated;
-  } else if (uiOriginalText.has(node)) {
-    const original = uiOriginalText.get(node);
-    if (current !== original) node.nodeValue = original;
-  }
+  let entry = uiOriginalText.get(node);
+  if (!entry || (current !== entry.last && current !== entry.source)) entry = {source:current, last:current};
+  entry.last = translateUiText(entry.source);
+  uiOriginalText.set(node, entry);
+  if (entry.last !== current) node.nodeValue = entry.last;
 }
 
 function localizeUiAttributes(element) {
@@ -4302,15 +4323,11 @@ function localizeUiAttributes(element) {
   for (const name of uiLocalizedAttributes) {
     if (!element.hasAttribute(name)) continue;
     const current = element.getAttribute(name) || '';
-    if (language === 'en') {
-      if (/[А-Яа-яЁё]/.test(current)) originals.set(name, current);
-      const source = originals.get(name) ?? current;
-      const translated = translateUiText(source);
-      if (translated !== current) element.setAttribute(name, translated);
-    } else if (originals.has(name)) {
-      const original = originals.get(name);
-      if (current !== original) element.setAttribute(name, original);
-    }
+    let entry = originals.get(name);
+    if (!entry || (current !== entry.last && current !== entry.source)) entry = {source:current, last:current};
+    entry.last = translateUiText(entry.source);
+    originals.set(name, entry);
+    if (entry.last !== current) element.setAttribute(name, entry.last);
   }
 }
 
@@ -4353,11 +4370,11 @@ function applyLanguage() {
   document.documentElement.lang = language;
   document.querySelectorAll('[data-i18n]').forEach(element => { element.textContent = t(element.dataset.i18n); });
   const button = document.getElementById('languageButton');
-  if (button) button.textContent = language === 'en' ? 'RU' : 'EN';
+  if (button) { button.textContent = language.toUpperCase(); button.title = 'Language / Idioma / Язык'; }
   applyRuntimeLocalization(document.body);
 }
 function toggleLanguage() {
-  language = language === 'en' ? 'ru' : 'en';
+  language = ({en:'es', es:'ru', ru:'en'})[language];
   localStorage.setItem('tvstreammersat5-language', language);
   applyLanguage();
   render(true);
@@ -6806,7 +6823,7 @@ function qualityOutputLabel(output, index) {
   const host = String(output?.output_host || '');
   const port = Number(output?.output_port || 0);
   const endpoint = host && port ? `${host}:${port}` : (host || (port ? String(port) : ''));
-  return language === 'en' ? `Output ${index + 1}: ${type}${endpoint ? ` ${endpoint}` : ''}` : `Выход ${index + 1}: ${type}${endpoint ? ` ${endpoint}` : ''}`;
+  return language !== 'ru' ? `${language === 'es' ? 'Salida' : 'Output'} ${index + 1}: ${type}${endpoint ? ` ${endpoint}` : ''}` : `Выход ${index + 1}: ${type}${endpoint ? ` ${endpoint}` : ''}`;
 }
 function qualityOutputKbps(sample, output) {
   const type = normalizedOutputType(output);
@@ -7004,7 +7021,7 @@ function drawQualityChart(data) {
     ctx.fillStyle = '#cfd8ea';
     ctx.font = '700 13px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(language === 'en' ? 'History is empty. Data will appear after several state updates.' : 'История пока пустая. Данные появятся после нескольких обновлений состояния.', width / 2, height / 2);
+    ctx.fillText(language === 'ru' ? 'История пока пустая. Данные появятся после нескольких обновлений состояния.' : language === 'es' ? 'Aún no hay historial. Los datos aparecerán después de varias actualizaciones.' : 'History is empty. Data will appear after several state updates.', width / 2, height / 2);
     canvas.onclick = () => copyQualityChartImage(canvas);
     details.innerHTML = '<div class="quality-card"><strong>Нет данных</strong>История собирается в памяти во время работы приложения.</div>';
     errors.innerHTML = '';

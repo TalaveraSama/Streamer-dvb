@@ -88,6 +88,12 @@ if [[ -f "${ROOT_DIR}/build/tvstreammersat5-ca-newcamd.so" ]]; then
         "${CA_PLUGIN_DIR}/tvstreammersat5-ca-newcamd.so"
 fi
 
+# Browser assets are served locally, without a CDN.
+install -d -m 0755 "${PREFIX}/web/vendor"
+for asset in mpegts.min.js hls.min.js adminlte-3.2.0.min.css LICENSE.adminlte; do
+    install -m 0644 "${ROOT_DIR}/web/vendor/${asset}" "${PREFIX}/web/vendor/${asset}"
+done
+
 # OSCam-mini and its seeded configuration (built by cmake/OscamMini.cmake).
 if [[ -f "${ROOT_DIR}/build/oscam-mini/oscam-mini" ]]; then
     install -Dm755 "${ROOT_DIR}/build/oscam-mini/oscam-mini" \
@@ -129,7 +135,8 @@ if [[ "${START_SERVICE}" -eq 1 ]]; then
     systemctl enable "${SERVICE}"
     systemctl restart "${SERVICE}"
     sleep 2
-    systemctl --no-pager --lines=0 status "${SERVICE}" || true
+    # Do not claim a successful update if the restarted service failed.
+    systemctl --no-pager --lines=0 status "${SERVICE}"
 else
     log "7/7 Service not started (--no-start or no systemd)"
 fi

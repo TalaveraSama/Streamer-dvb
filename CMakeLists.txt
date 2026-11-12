@@ -182,6 +182,8 @@ tvstreammersat5_apply_warnings(TVStreammerSAT5)
 tvstreammersat5_apply_warnings(tvstreammersat5_ca_newcamd)
 
 install(TARGETS TVStreammerSAT5 RUNTIME DESTINATION bin)
+install(FILES web/vendor/mpegts.min.js web/vendor/hls.min.js web/vendor/adminlte-3.2.0.min.css web/vendor/LICENSE.adminlte
+        DESTINATION web/vendor)
 install(TARGETS tvstreammersat5_ca_newcamd LIBRARY DESTINATION /opt/tvstreammersat5/ca-plugins)
 
 include(${CMAKE_SOURCE_DIR}/cmake/OscamMini.cmake)
