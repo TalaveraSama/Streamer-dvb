@@ -1,5 +1,18 @@
 # Modernización de la interfaz (trabajo en curso)
 
+## Apariencia y revisión
+
+El panel y OSCam-mini usan un tema claro y compacto inspirado en los paneles de
+monitorización de Astra, sin reutilizar su marca ni sus recursos. Se conservan
+los controles y los gráficos oscuros para mantener la legibilidad de las series.
+La vista previa de desarrollo con datos ficticios no controla servicios reales.
+
+En la revisión se corrigieron el restablecimiento de ajustes no incluidos en un
+POST parcial, el guardado truncado ante errores de escritura y varias inserciones
+de datos sin escapar en formularios y tarjetas. La auditoría no es exhaustiva:
+quedan por probar el flujo real de canales, OSCam y DVB, las actualizaciones
+simultáneas de configuración y otras vistas y errores dinámicos.
+
 ## Idiomas
 
 El botón de idioma del panel principal alterna inglés, español y ruso. La

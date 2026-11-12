@@ -1,3 +1,4 @@
+#include "AtomicFile.h"
 #include "ConfigManager.h"
 #include "utils.h"
 
@@ -797,21 +798,12 @@ bool ConfigManager::save() {
     }
     root["password"] = encryptedPassword;
 
-    std::ofstream output(configPath, std::ios::trunc);
-    if (!output.is_open()) {
-        std::cerr << "Unable to open config file for writing: " << configPath << std::endl;
-        return false;
-    }
     Json::StreamWriterBuilder writer;
     writer["indentation"] = "  ";
-    output << Json::writeString(writer, root);
-    output.flush();
-    if (!output.good()) {
-        std::cerr << "Unable to write config file: " << configPath << std::endl;
+    if (!tvs::writePrivateAtomic(configPath, Json::writeString(writer, root))) {
+        std::cerr << "Unable to atomically write config file: " << configPath << std::endl;
         return false;
     }
-    output.close();
-    ::chmod(configPath.c_str(), S_IRUSR | S_IWUSR);
     return true;
 }
 

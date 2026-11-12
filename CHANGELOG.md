@@ -5,6 +5,14 @@ Las versiones siguen el esquema del proyecto original (`203.xx`).
 
 ## En desarrollo
 
+- Nueva apariencia clara y compacta inspirada en Astra para el panel y OSCam-mini.
+- Las actualizaciones parciales de configuración preservan los ajustes no
+  enviados, incluidos los de seguridad y Telegram; los errores de guardado se
+  notifican y no reinician flujos. El archivo principal se sustituye de forma
+  atómica y privada tras completar la escritura.
+- Escapado de datos configurables en varias vistas y formularios para evitar
+  que nombres, URL y textos se interpreten como HTML o código del manejador.
+
 - Ampliada la traducción española del panel de flujos, DVB, MPTS, CAM y sus
   mensajes dinámicos; se mantienen el inglés y el ruso.
 

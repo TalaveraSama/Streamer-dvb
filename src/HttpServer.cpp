@@ -9,6 +9,7 @@
 #include "OscamMiniManager.h"
 #include "protocols/GstProtocolTypes.h"
 #include "HttpOriginPolicy.h"
+#include "ConfigPatch.h"
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -3000,8 +3001,8 @@ std::string HttpServer::handleSaveConfig(const std::string& body) {
     Json::Value root;
     std::string errs;
     std::istringstream ss(body);
-    if (!Json::parseFromStream(readerBuilder, ss, &root, &errs)) {
-        const std::string message = "Invalid config payload: " + errs;
+    if (!Json::parseFromStream(readerBuilder, ss, &root, &errs) || !root.isObject()) {
+        const std::string message = "Invalid config payload: " + (errs.empty() ? "expected object" : errs);
         std::cerr << message << std::endl;
         Json::Value response; response["result"] = "error"; response["error"] = message;
         Json::StreamWriterBuilder writer; return Json::writeString(writer, response);
@@ -3009,7 +3010,9 @@ std::string HttpServer::handleSaveConfig(const std::string& body) {
     const AppConfig previousConfig = configManager.config;
     const auto previousStreams = streamConfigById(previousConfig.streams);
     const auto managedSnapshot = streamManager.snapshot();
-    AppConfig nextConfig = AppConfig::fromJson(root);
+    // A panel request may contain only language or a handful of fields.
+    // Parsing that partial object directly resets omitted security settings.
+    AppConfig nextConfig = AppConfig::fromJson(tvs::mergeConfigPatch(previousConfig.toJson(), root));
     if (!root.isMember("login") || root.get("login", "").asString().empty()) {
         nextConfig.login = configManager.config.login;
     }
@@ -3036,8 +3039,8 @@ std::string HttpServer::handleSaveConfig(const std::string& body) {
     }
     const bool hasStreamArray = root.isMember("streams") && root["streams"].isArray();
     const bool explicitlyAllowEmptyStreams = root.get("allow_empty_streams", false).asBool();
-    if ((!hasStreamArray || nextConfig.streams.empty()) &&
-        !previousConfig.streams.empty() && !explicitlyAllowEmptyStreams) {
+    if (!hasStreamArray || (nextConfig.streams.empty() &&
+        !previousConfig.streams.empty() && !explicitlyAllowEmptyStreams)) {
         nextConfig.streams = previousConfig.streams;
         std::cerr << "Config save preserved " << previousConfig.streams.size()
                   << " existing stream(s): request contained no streams or an empty stream list"
@@ -3086,7 +3089,11 @@ std::string HttpServer::handleSaveConfig(const std::string& body) {
     }
 
     configManager.config = nextConfig;
-    configManager.save();
+    if (!configManager.save()) {
+        configManager.config = previousConfig;
+        Json::Value response; response["result"] = "error"; response["error"] = "Failed to save configuration";
+        Json::StreamWriterBuilder writer; return Json::writeString(writer, response);
+    }
     CardManager::instance().configure(configManager.config.camClients);
     refreshHttpPorts();
 
@@ -3855,6 +3862,74 @@ header{position:fixed;top:0;left:0;right:0;z-index:100000;overflow:visible;displ
 .tvp-status { margin:0;min-height:1.5em;color:#b8c7d9;overflow-wrap:anywhere; }.tvp-error { color:#ffb7aa; }
 @media(max-width:650px) { .tvp-overlay{padding:4px}.tvp-dialog{padding:10px}.tvp-video{max-height:48vh} }
 
+/* Light broadcast dashboard inspired by Astra's compact monitoring view.
+   Visual treatment only: stream operations and states remain unchanged. */
+:root{--panel-bg:#f4f7f9;--panel-surface:#fff;--panel-ink:#283644;--panel-muted:#637687;--panel-line:#dbe4ea;--panel-blue:#247eaf;--panel-green:#27834b}
+html{font-size:14px}
+body{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:var(--panel-bg);color:var(--panel-ink)}
+body:before{display:none}
+header{background:#fff;border-bottom:1px solid #d9e4ea;box-shadow:0 2px 12px rgba(30,57,75,.06);backdrop-filter:none;padding:12px 22px;gap:14px}
+.header-left{gap:28px}.header-title-block{padding-left:12px;border-left:3px solid #318bb8}
+.header-left .title{color:#263d4c;font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;font-weight:750}
+.header-title-block .server-name{color:#287fa8;font-size:1rem;margin-top:3px}
+.header-monitor{gap:14px}.header-monitor-group{min-width:96px}
+.header-monitor .metric,.header-monitor .status{background:#f5f9fb;border-color:#e1ebf0;border-radius:4px;color:#617789;padding:5px 8px}
+.header-monitor strong{color:#617789}.header-monitor .metric span,.header-monitor .status span{color:#27485c}
+.button-primary,.button-secondary,.button-danger{border-radius:4px;font-weight:600}
+.button-primary{background:#287eaf;color:white;border:1px solid #287eaf}
+.button-primary:hover{background:#1d6d9a}.button-secondary{background:#fff;color:#317b9f;border:1px solid #cbdde7}
+.button-secondary:hover,.system-menu[open] summary{background:#edf7fb;border-color:#95c5db;color:#216e94}
+.button-primary.save-clean,.button-primary.save-clean:hover{background:#edf1f3;color:#687a85;box-shadow:none;border-color:#dce4e8}
+.button-primary.save-dirty,.button-primary.save-dirty:hover{background:#df9b22;border-color:#c8871a;color:#fff;box-shadow:none}
+.button-danger{background:#fff5f5;color:#b33e44;border-color:#efc7c9}
+.system-menu-list{background:#fff;border:1px solid #d9e4ea;border-radius:5px;box-shadow:0 12px 32px #1d405026}
+.system-menu-item{color:#415c6e;border-radius:3px}.system-menu-item:hover{background:#eef6fa}
+.system-menu-item.restart-button{color:#a16a1c}.system-menu-item.restart-button:hover{background:#fff6e8}
+.container{max-width:none;padding:calc(var(--header-height,70px) + 24px) 24px 32px}
+.dashboard-heading{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:0 0 16px;padding:0 0 13px;border-bottom:1px solid #dbe5eb}
+.dashboard-heading h1{margin:0;color:#263d4c;font-size:1.2rem;font-weight:650;letter-spacing:.01em}
+.dashboard-heading span{color:#718595;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase}
+.tile-grid{grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:12px}
+.tile{background:#fff;border:1px solid #d7e1e6;border-top:3px solid #a9bbc5;border-radius:4px;box-shadow:0 2px 7px #27485c0a;padding:12px;gap:7px;height:auto;min-height:245px;font-size:12px;transition:border-color .15s,box-shadow .15s}
+.tile:before{display:none}.tile:hover{transform:none;border-color:#95b9ca;box-shadow:0 4px 14px #27485c18}
+.tile.active,.tile.active:hover{border-color:#69bd83;border-top-color:#39a865}.tile.error,.tile.error:hover{border-color:#e59696;border-top-color:#d65252}
+.tile .top{min-height:0;padding-right:60px}.tile .top>div{min-width:0}.tile .title{font-size:14px;line-height:1.3;font-weight:650;color:#2b3f4d}
+.tile .tile-actions{top:12px;right:10px}.tile .badge{border-radius:3px;background:#eaf5fa;color:#267ba6;font-size:9px;letter-spacing:.04em}
+.tile .delete-button{background:#f9eded;color:#a53b41;box-shadow:none;border-radius:3px}.tile .delete-button:hover{background:#e5c2c4;color:#8a242a}
+.tile .status-line{margin-top:6px;gap:6px}.tile .status-pill{border-radius:3px;background:#eff2f4;color:#5e7180;font-size:9px;letter-spacing:.03em}
+.tile .status-pill.active{background:#e6f5ea;color:#237c42}.tile .status-pill.stopped{background:#f2f4f5;color:#6a7b85}.tile .runtime-status{color:#637a8a;font-size:10px}
+.tile .dvb-meters{gap:7px}.tile .dvb-meters.placeholder{display:none}.tile .dvb-meter{height:14px;background:#e9eff2;box-shadow:none;border-radius:3px}
+.tile .dvb-meter-label{font-size:9px;color:#253e4e;text-shadow:0 1px 1px #fff9}
+.tile .info{gap:4px;color:#627685;font-size:11px}.tile .info-row{align-items:baseline;min-width:0}.tile .info-row strong{color:#7a8d9a;font-size:10px;font-weight:600}.tile .info-row span{color:#3b5667;max-width:65%;font-size:11px}.tile .info-row.placeholder{display:none}
+.tile .decode-pill.clear{background:#e6f5ea;color:#207744}.tile .decode-pill.scrambled{background:#fbeaea;color:#aa3139}.tile .decode-pill.waiting{background:#fff4dc;color:#8b610d}.tile .decode-pill.offline{background:#edf1f3;color:#61717b}
+.tile .controls{margin-top:auto;padding-top:9px;border-top:1px solid #edf1f3;gap:4px}
+.tile .controls button,.tile .controls .quality-button{border:1px solid #dbe6ec;background:#f7fafb;color:#376e8b;border-radius:3px;font-size:10px;padding:6px 3px;box-shadow:none}
+.tile .controls button:hover,.tile .controls .quality-button:hover{background:#eaf4f8}
+.tile .controls .start-button{background:#eaf7ed;color:#237e45;border-color:#cae9d2;box-shadow:none}.tile .controls .start-button:hover{background:#d7f0df}
+.tile .controls .stop-button{background:#fff1f1;color:#ad3940;border-color:#f1d0d0;box-shadow:none}.tile .controls .stop-button:hover{background:#fae1e1}
+.tile .controls .copy-button.copied{background:#daf2e1;color:#236f3c;box-shadow:none}.tile .controls .copy-button.copy-error{background:#fff1db;color:#855707;box-shadow:none}
+.modal{background:rgba(37,54,67,.48)}.modal-content{background:#fff;color:#273d4d;border:1px solid #d3dfe6;border-radius:6px;box-shadow:0 20px 55px #1b344b30;padding:22px}
+.modal-content h2{color:#2a4050;font-size:1.3rem;font-weight:650;padding-bottom:13px;border-bottom:1px solid #e0e9ed}
+.modal-close{background:#f8ecec;color:#a53b41;border-radius:3px;box-shadow:none}.modal-close:hover{background:#efcccc;color:#8a242a}
+.form-row label,.sat-field label{color:#607887;font-size:.76rem;font-weight:600}.form-row small{color:#687e8c;line-height:1.5}
+.form-row input:not([type=checkbox]),.form-row select,.sat-field input,.sat-field select,.subscriber-row input,.cam-controls input[type=number],.cam-controls select,.quality-refresh select,.quality-output-select select{background:#fff;color:#2d4656;border:1px solid #cddce4;border-radius:4px;box-sizing:border-box}
+input[type=checkbox]{accent-color:#2788b5}input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid #328fbe;outline-offset:2px}
+.output-row,.mpts-row,.mpts-service-row,.cam-row{background:#f8fbfc;border-color:#dce8ed;border-radius:4px}.output-row .remove-output,.subscriber-row .remove-subscriber{background:#fcebec;color:#ad3940;border-radius:4px}
+.backup-library-button,.backup-library-menu,.subscriber-stream-options{background:#fff;color:#334e5d;border-color:#cedde6}.backup-library-select,.subscriber-stream-options label{color:#334e5d}.backup-library-select:hover{background:#eef6f9}.backup-library-empty,.backup-file-row span{color:#687f8e}
+.about-row,.network-table th,.network-table td,.connection-monitor,.subscriber-streams{border-color:#e1e9ed}.about-row strong,.subscriber-head,.network-table th,.network-empty{color:#718795}.about-row span,.about-row a,.network-table{color:#344f60}
+.subscriber-stream-picker summary{background:#f8fbfc;border-color:#d4e3ea;color:#3b6075}.subscriber-enabled,.subscriber-session.active{color:#27834b}.subscriber-session{color:#718795}.reset-session{background:#fff7e9;color:#8b651e;border-color:#ecd8ad}
+.connection-monitor-head h3,.unknown-connection-stream{color:#334e5d}.connection-monitor-hint,.unknown-connection-head,.blocked-ip-label{color:#718795}.unknown-connection-row{border-color:#e1e9ed}.block-client,.blocked-ip-row{background:#fff5f5;color:#ad3940;border-color:#efcaca}
+.sat-signal-panel{background:#f2f9fb;border-color:#d8e9ef;border-radius:5px}.sat-meter-head,.sat-meter-head strong{color:#526f80}.sat-bar{background:#dce8ed}.sat-lock{background:#fff0f0;color:#ae3c42}.sat-lock.locked{background:#e9f6ec;color:#287e48}
+.sat-services{border-color:#dbe7ec;border-radius:5px}.sat-service-head{background:#f2f7f9;color:#637c8d}.sat-service-row{border-color:#e6edf0}.sat-service-row:hover{background:#f4fafb}.sat-service-name{color:#324e60}.sat-service-provider,.sat-scan-status{color:#607989}.sat-empty{color:#728795}.sat-output{border-color:#dce8ed}
+.sat-access.fta,.cam-state.card,.mpts-state.on{color:#227642;background:#e8f6eb;border-color:#c8e7cf}.sat-access.ca,.cam-state.no-card{color:#a8343d;background:#fff0f0;border-color:#efc9cc}.sat-access.unknown,.cam-state.warn{color:#8b6416;background:#fff7e5;border-color:#ecd9ad}
+.cam-panel{background:#f7fafc;border-color:#dbe7ed;border-radius:5px}.cam-head strong,.cam-row .cam-name,.mpts-name{color:#334e5f}.cam-device,.cam-controls,.cam-activation-detail,.cam-empty,.mpts-endpoint,.mpts-services,.mpts-hint,.mpts-runtime{color:#667e8e}.cam-controls{border-color:#dfe9ed}.cam-state.busy,.cam-state.detected{color:#286c91;background:#e8f5fa}
+.mpts-service-picker,.mpts-advanced{background:#f8fbfc;border-color:#dce8ed;border-radius:5px}.mpts-advanced summary{color:#42697e}.mpts-empty{border-color:#d8e4ea;color:#718795}.mpts-runtime.ready{color:#288346}
+/* Keep charts and embedded video dark for readable plots and video contrast. */
+.modal-content.quality-modal{background:#101a27;color:#e7eef6;border-color:#35485a}.quality-modal h2{color:#fff;border-color:#35485a}
+.quality-modal .period-tabs button{color:#d7deec}.quality-modal .period-tabs button.active{color:#fff}
+@media(max-width:760px){header{padding:10px 12px}.header-left{gap:8px;flex-wrap:wrap}.header-title-block{flex:1 1 145px}.header-monitor{flex-wrap:wrap}.header-right{gap:5px}.container{padding-left:12px;padding-right:12px}.tile-grid{grid-template-columns:repeat(auto-fill,minmax(min(245px,100%),1fr));gap:9px}.dashboard-heading{margin-bottom:12px}.modal-content{padding:16px}.header-monitor-group{min-width:75px}}
+
+@media(max-width:480px){.header-title-block{flex-basis:100%}.header-title-block .server-name{white-space:normal;overflow-wrap:anywhere}}
 </style>
 </head>
 <body>
@@ -3896,6 +3971,7 @@ header{position:fixed;top:0;left:0;right:0;z-index:100000;overflow:visible;displ
 </div>
 </header>
 <div class="container">
+<div class="dashboard-heading"><h1 data-i18n="streams">Streams</h1><span>TVStreammerSAT5</span></div>
 <div id="tiles" class="tile-grid"></div>
 <div id="modal" class="modal">
 <div class="modal-content" id="modalContent"></div>
@@ -4806,7 +4882,7 @@ function fetchState() {
       allowEmptyStreamStateOnce = false;
       const storedLanguage = localStorage.getItem('tvstreammersat5-language');
       const serverLanguage = normalizeLanguage(data.language);
-      language = normalizeLanguage(storedLanguage || language);
+      language = normalizeLanguage(storedLanguage || serverLanguage);
       localStorage.setItem('tvstreammersat5-language', language);
       data.language = language;
       const cachedInterfaces = Array.isArray(state.interfaces) ? state.interfaces : [];
@@ -4845,7 +4921,7 @@ function updateSystemLoad(metrics) {
   if (!table) return;
   const interfaces = metrics.interfaces || [];
   table.innerHTML = interfaces.length ? interfaces.map(iface => `
-    <tr><td>${iface.name}${iface.address ? ` (${iface.address})` : ''}</td><td>${Number(iface.rx_mbps || 0).toFixed(2)} Mbps</td><td>${Number(iface.tx_mbps || 0).toFixed(2)} Mbps</td></tr>
+    <tr><td>${escapeHtmlValue(iface.name)}${iface.address ? ` (${escapeHtmlValue(iface.address)})` : ''}</td><td>${Number(iface.rx_mbps || 0).toFixed(2)} Mbps</td><td>${Number(iface.tx_mbps || 0).toFixed(2)} Mbps</td></tr>
   `).join('') : `<tr><td colspan="3" class="network-empty">${t('interfacesNotFound')}</td></tr>`;
 }
 function fetchSystemMetrics() {
@@ -5042,7 +5118,7 @@ function updateStreamTile(tile, stream) {
 
   const activeInput = tile.querySelector('[data-role="active-input"]');
   if (activeInput) {
-    activeInput.textContent = `${stream.active_input_label || t('primary')} · ${stream.active_input_uri || stream.input_uri || '—'}`;
+    activeInput.textContent = `${escapeHtmlValue(stream.active_input_label || t('primary'))} · ${escapeHtmlValue(stream.active_input_uri || stream.input_uri || '—')}`;
   }
 
   const bitrateIn = tile.querySelector('[data-role="bitrate-in"]');
@@ -5118,7 +5194,7 @@ function render(force=false) {
         </div>
       </div>
       <div class="tile-actions">
-        <div class="badge">${outputs.length > 1 ? outputBadgeText(stream) : bitrateMode}</div>
+        <div class="badge">${escapeHtmlValue(outputs.length > 1 ? outputBadgeText(stream) : bitrateMode)}</div>
         <button class="delete-button" title="${t('delete')}" aria-label="${t('delete')}" data-stream-action="delete" data-stream-id="${escapeHtmlValue(stream.id)}">×</button>
       </div>
       <div class="dvb-meters${stream.dvb_input ? '' : ' placeholder'}" title="${stream.dvb_input ? 'DVB Signal / Quality' : ''}">
@@ -5126,16 +5202,16 @@ function render(force=false) {
         <div class="dvb-meter"><span data-role="dvb-quality-fill" class="dvb-meter-fill"></span><b data-role="dvb-quality-label" class="dvb-meter-label">Q —</b></div>
       </div>
       <div class="info">
-        <div class="info-row"><strong>${t('output')}</strong><span>${outputs.length > 1 ? outputBadgeText(stream) : outputType.toUpperCase()} · ${primaryLink}</span></div>
-        <div class="info-row"><strong>${t('activeInput')}</strong><span data-role="active-input">${stream.active_input_label || t('primary')} · ${stream.active_input_uri || stream.input_uri || '—'}</span></div>
-        <div class="info-row"><strong>${t('primary')}</strong><span>${stream.input_uri || '—'}</span></div>
-        <div class="info-row"><strong>${t('backup')}</strong><span>${stream.backup_input_uri || '—'}${stream.backup_input_type === 'file' && stream.backup_file_loop ? ' · loop' : ''}</span></div>
-        <div class="info-row"><strong>${t('sid')}</strong><span>${stream.service_id || '—'}</span></div>
-        ${stream.conditional_access_client ? `<div class="info-row"><strong>CA</strong><span data-role="ca-status">${caStreamStatusText(stream)}</span></div>
+        <div class="info-row"><strong>${t('output')}</strong><span>${escapeHtmlValue(outputs.length > 1 ? outputBadgeText(stream) : outputType.toUpperCase())} · ${escapeHtmlValue(primaryLink)}</span></div>
+        <div class="info-row"><strong>${t('activeInput')}</strong><span data-role="active-input">${escapeHtmlValue(stream.active_input_label || t('primary'))} · ${escapeHtmlValue(stream.active_input_uri || stream.input_uri || '—')}</span></div>
+        <div class="info-row"><strong>${t('primary')}</strong><span>${escapeHtmlValue(stream.input_uri || '—')}</span></div>
+        <div class="info-row"><strong>${t('backup')}</strong><span>${escapeHtmlValue(stream.backup_input_uri || '—')}${stream.backup_input_type === 'file' && stream.backup_file_loop ? ' · loop' : ''}</span></div>
+        <div class="info-row"><strong>${t('sid')}</strong><span>${escapeHtmlValue(stream.service_id || '—')}</span></div>
+        ${stream.conditional_access_client ? `<div class="info-row"><strong>CA</strong><span data-role="ca-status">${escapeHtmlValue(caStreamStatusText(stream))}</span></div>
         <div class="info-row decode-row"><strong>Декодирование</strong><span data-role="decode-status" class="decode-pill ${caDecodeInfo(stream).cls}" title="Контроль по A/V PID, scrambling_control и валидному PES">${caDecodeInfo(stream).text}</span></div>` : `<div class="info-row placeholder"><strong>CA</strong><span>—</span></div>
         <div class="info-row placeholder decode-row"><strong>Декодирование</strong><span>—</span></div>`}
-        <div class="info-row"><strong>${t('bitrateIn')}</strong><span data-role="bitrate-in">${stream.bitrate_in_kbps ? stream.bitrate_in_kbps + ' kbps' : '—'}</span></div>
-        <div class="info-row"><strong>${t('bitrateOut')}</strong><span data-role="bitrate-out">${stream.bitrate_out_kbps ? stream.bitrate_out_kbps + ' kbps' : '—'}</span></div>
+        <div class="info-row"><strong>${t('bitrateIn')}</strong><span data-role="bitrate-in">${escapeHtmlValue(stream.bitrate_in_kbps ? stream.bitrate_in_kbps + ' kbps' : '—')}</span></div>
+        <div class="info-row"><strong>${t('bitrateOut')}</strong><span data-role="bitrate-out">${escapeHtmlValue(stream.bitrate_out_kbps ? stream.bitrate_out_kbps + ' kbps' : '—')}</span></div>
       </div>
       <div class="controls">
         <button data-role="stream-toggle" data-stream-action="toggle" data-stream-id="${escapeHtmlValue(stream.id)}" data-stream-active="${stream.active ? '1' : '0'}" class="${stream.active ? 'stop-button' : 'start-button'}">${stream.active ? t('stop') : t('start')}</button>
@@ -5450,18 +5526,18 @@ function openSubscribersModal() {
   const renderSubscribers = () => {
     const subscribers = state.subscribers || [];
     const rows = subscribers.length ? subscribers.map((subscriber, index) => `
-      <div class="subscriber-row" data-index="${index}" data-added-at="${subscriber.added_at || ''}">
-        <input data-field="name" value="${subscriber.name || ''}" placeholder="${t('subscriberName')}" />
-        <input data-field="primary_ip" value="${subscriber.primary_ip || ''}" placeholder="${t('primaryIp')}" />
-        <input data-field="backup_ip" value="${subscriber.backup_ip || ''}" placeholder="${t('backupIp')}" />
+      <div class="subscriber-row" data-index="${index}" data-added-at="${escapeHtmlValue(subscriber.added_at || '')}">
+        <input data-field="name" value="${escapeHtmlValue(subscriber.name || '')}" placeholder="${t('subscriberName')}" />
+        <input data-field="primary_ip" value="${escapeHtmlValue(subscriber.primary_ip || '')}" placeholder="${t('primaryIp')}" />
+        <input data-field="backup_ip" value="${escapeHtmlValue(subscriber.backup_ip || '')}" placeholder="${t('backupIp')}" />
         <details class="subscriber-stream-picker">
-          <summary id="subscriberStreamsSummary-${index}">${t('streams')} (${(subscriber.stream_ids || []).length}) · ${subscriber.stream_class || subscriberStreamClassFromIds(subscriber.stream_ids || [])}</summary>
+          <summary id="subscriberStreamsSummary-${index}">${t('streams')} (${(subscriber.stream_ids || []).length}) · ${escapeHtmlValue(subscriber.stream_class || subscriberStreamClassFromIds(subscriber.stream_ids || []))}</summary>
           <div class="subscriber-stream-options">
-            ${(state.streams || []).map(stream => `<label><input type="checkbox" data-stream-id="${stream.id}" onchange="updateSubscriberStreamSummary(${index})" ${(subscriber.stream_ids || []).includes(stream.id) ? 'checked' : ''} />${stream.name || stream.id}</label>`).join('') || `<span>${t('noStreams')}</span>`}
+            ${(state.streams || []).map(stream => `<label><input type="checkbox" data-stream-id="${escapeHtmlValue(stream.id)}" onchange="updateSubscriberStreamSummary(${index})" ${(subscriber.stream_ids || []).includes(stream.id) ? 'checked' : ''} />${escapeHtmlValue(stream.name || stream.id)}</label>`).join('') || `<span>${t('noStreams')}</span>`}
           </div>
         </details>
         <label class="subscriber-enabled"><input data-field="enabled" type="checkbox" onchange="updateSubscriberStatus(this)" ${subscriber.enabled !== false ? 'checked' : ''} /><span>${subscriber.enabled !== false ? t('enabled') : t('disabled')}</span></label>
-        <div class="subscriber-session ${subscriber.session_active ? 'active' : ''}"><span>${subscriber.session_active ? `${t('activeSession')} (${subscriber.active_sessions || 0})` : t('offlineSession')}</span><button class="reset-session" onclick="resetSubscriberSession('${String(subscriber.name || '').replace(/'/g, "\\'")}')">${t('resetSession')}</button></div>
+        <div class="subscriber-session ${subscriber.session_active ? 'active' : ''}"><span>${subscriber.session_active ? `${t('activeSession')} (${subscriber.active_sessions || 0})` : t('offlineSession')}</span><button class="reset-session" data-subscriber-name="${escapeHtmlValue(subscriber.name || '')}" onclick="resetSubscriberSession(this.dataset.subscriberName)">${t('resetSession')}</button></div>
         <button class="remove-subscriber" onclick="removeSubscriber(${index})" aria-label="Remove">×</button>
       </div>
     `).join('') : `<div class="network-empty">${t('noSubscribers')}</div>`;
@@ -5824,9 +5900,9 @@ function openLoginModal() {
   openModal(`
     <h2>${t('userTitle')}</h2>
     <div class="form-grid full">
-      <div class="form-row"><label>Login</label><input id="login" value="${state.login||''}" /></div>
+      <div class="form-row"><label>Login</label><input id="login" value="${escapeHtmlValue(state.login||'')}" /></div>
       <div class="form-row"><label>Новый пароль</label><input id="password" type="password" placeholder="Оставьте пустым, чтобы не менять" /></div>
-      <div class="form-row"><label>Имя сервера</label><input id="serverName" value="${state.server_name||''}" /></div>
+      <div class="form-row"><label>Имя сервера</label><input id="serverName" value="${escapeHtmlValue(state.server_name||'')}" /></div>
       <div class="form-row"><label>Порт web-интерфейса</label><input id="httpPort" type="number" min="1" max="65535" value="${state.http_port||9000}" /></div>
       <div class="form-row full"><label>SRT для VPS/VDS</label><div class="checkbox-inline"><input id="srtVpsVdsOptimization" type="checkbox" ${state.srt_vps_vds_optimization ? 'checked' : ''} /><span>Оптимизация SRT для VPS/VDS/контейнеров</span></div><small>203.67: включает для всех SRT-входов и выходов latency 1500 ms, rcvlatency/peerlatency 1500 ms, SRT RX/TX buffers 16 MiB, FC 32768 пакетов и poll-timeout 2000 ms. Использовать на VPS/VDS с виртуальной сетью; на обычном LAN/физическом сервере оставлять выключенным.</small></div>
     </div>
@@ -5840,8 +5916,8 @@ function openTelegramModal() {
   openModal(`
     <h2>Telegram API</h2>
     <div class="form-grid full">
-      <div class="form-row"><label>Token</label><input id="telegramToken" value="${state.telegram_token||''}" /></div>
-      <div class="form-row"><label>Chat ID</label><input id="telegramChatId" value="${state.telegram_chat_id||''}" /></div>
+      <div class="form-row"><label>Token</label><input id="telegramToken" value="${escapeHtmlValue(state.telegram_token||'')}" /></div>
+      <div class="form-row"><label>Chat ID</label><input id="telegramChatId" value="${escapeHtmlValue(state.telegram_chat_id||'')}" /></div>
     </div>
     <div class="modal-actions">
       <button class="button-secondary" onclick="closeModal()">Отмена</button>
@@ -6453,11 +6529,11 @@ function renderOutputRows(outputs, links=[], startIndex=0) {
       <div class="output-row" data-output-index="${index}">
         <div class="form-row"><label>${index === 0 ? 'Основной формат' : 'Доп. формат'}</label><select data-output-field="output_type" onchange="updateOutputHints()">${outputTypeOptions(type)}</select></div>
         <div class="form-row"><label>SRT режим</label><select data-output-field="output_mode" onchange="updateOutputHints()"><option value="listener" ${(!output.output_mode || output.output_mode==='listener')?'selected':''}>Listener</option><option value="caller" ${output.output_mode==='caller'?'selected':''}>Caller</option></select></div>
-        <div class="form-row"><label data-output-host-label>Адрес выхода</label><input data-output-field="output_host" value="${output.output_host||'239.0.0.1'}" placeholder="239.0.0.1" /></div>
-        <div class="form-row"><label data-output-port-label>Порт</label><input data-output-field="output_port" type="number" min="1" max="65535" value="${output.output_port||1234}" placeholder="1234" /></div>
+        <div class="form-row"><label data-output-host-label>Адрес выхода</label><input data-output-field="output_host" value="${escapeHtmlValue(output.output_host||'239.0.0.1')}" placeholder="239.0.0.1" /></div>
+        <div class="form-row"><label data-output-port-label>Порт</label><input data-output-field="output_port" type="number" min="1" max="65535" value="${escapeHtmlValue(output.output_port||1234)}" placeholder="1234" /></div>
         <div class="form-row"><label>Интерфейс</label><select data-output-field="interface_address" onchange="outputInterfaceChanged(this)" ${index === 0 ? 'disabled' : ''}>${outputInterfaceOptions(interfaceAddress, index === 0 ? 'Основной интерфейс' : 'Как основной')}</select></div>
         <button class="remove-output" type="button" onclick="removeStreamOutput(this)" ${index === 0 ? 'disabled' : ''}>×</button>
-        <div class="form-row full" style="grid-column:1/-1"><label>URL для плеера</label><input readonly value="${link}" placeholder="Ссылка появится после сохранения" /></div>
+        <div class="form-row full" style="grid-column:1/-1"><label>URL для плеера</label><input readonly value="${escapeHtmlValue(link)}" placeholder="Ссылка появится после сохранения" /></div>
       </div>
     `;
   }).join('');
@@ -6636,10 +6712,10 @@ function openStreamForm(stream) {
   const renderStreamForm = () => {
     const ifaceOptions = state.interfaces || [];
     const inputIfaceOptions = (state.input_interfaces && state.input_interfaces.length) ? state.input_interfaces : ifaceOptions;
-    const outputOptions = ifaceOptions.map(i=>`<option value="${i.address}" ${i.address===stream.interface_address?'selected':''}>${i.name} (${i.address})</option>`).join('');
+    const outputOptions = ifaceOptions.map(i=>`<option value="${escapeHtmlValue(i.address)}" ${i.address===stream.interface_address?'selected':''}>${escapeHtmlValue(i.name)} (${escapeHtmlValue(i.address)})</option>`).join('');
     const hasInputInterface = Object.prototype.hasOwnProperty.call(stream, 'input_interface_address');
     const selectedInputInterface = hasInputInterface ? (stream.input_interface_address || '') : (stream.interface_address || '');
-    const inputOptions = inputIfaceOptions.map(i=>`<option value="${i.address}" ${i.address===selectedInputInterface?'selected':''}>${i.name} (${i.address})</option>`).join('');
+    const inputOptions = inputIfaceOptions.map(i=>`<option value="${escapeHtmlValue(i.address)}" ${i.address===selectedInputInterface?'selected':''}>${escapeHtmlValue(i.name)} (${escapeHtmlValue(i.address)})</option>`).join('');
     const outputs = outputConfigsForStream(stream);
     const outputType = normalizedOutputType(outputs[0] || stream);
     const links = Array.isArray(stream.vlc_links) ? stream.vlc_links : [];
@@ -6653,12 +6729,12 @@ function openStreamForm(stream) {
     openModal(`
       <h2>${stream.name ? 'Редактирование трансляции' : 'Настройка трансляции'}</h2>
       <div class="form-grid">
-        <div class="form-row full"><label>Имя плитки</label><input class="compact" id="streamName" value="${stream.name||''}" placeholder="Belarus 5" /></div>
-        <div class="form-row full"><div class="input-main-row"><div class="form-row"><label>Входной URL (Основной)</label><input id="streamInput" value="${stream.input_uri||''}" placeholder="rtsp://camera/live, udp://@:9087, udp://239.1.1.1:1234 или https://host/live.m3u8" /></div><div class="form-row"><label>Интерфейс входа</label><select id="streamInputInterface"><option value="">Auto / все интерфейсы</option>${inputOptions}</select></div><div class="form-row"><label>Режим входа</label><select id="streamInputMode" onchange="updateHlsSynchronizationVisibility()"><option value="auto" ${(!stream.input_mode || stream.input_mode==='auto')?'selected':''}>Auto</option><option value="rtsp-tcp" ${stream.input_mode==='rtsp-tcp'?'selected':''}>RTSP TCP</option><option value="rtsp-udp" ${stream.input_mode==='rtsp-udp'?'selected':''}>RTSP UDP</option><option value="rtsp-auto" ${stream.input_mode==='rtsp-auto'?'selected':''}>RTSP Auto</option><option value="hls" ${stream.input_mode==='hls'?'selected':''}>HLS</option><option value="http-ts" ${stream.input_mode==='http-ts'?'selected':''}>HTTP MPEG-TS</option><option value="caller" ${stream.input_mode==='caller'?'selected':''}>SRT Caller</option><option value="listener" ${stream.input_mode==='listener'?'selected':''}>SRT Listener</option></select></div></div></div>
-        <div class="form-row full"><label>HTTP / HLS доступ</label><div class="row-inline compact-row"><select id="streamHlsAccessKeyMode"><option value="none" ${(!stream.hls_access_key_mode||stream.hls_access_key_mode==='none')?'selected':''}>Без ключа</option><option value="header" ${stream.hls_access_key_mode==='header'?'selected':''}>HTTP Header</option><option value="query" ${stream.hls_access_key_mode==='query'?'selected':''}>Query parameter</option></select><input id="streamHlsAccessKeyName" value="${stream.hls_access_key_name||'Authorization'}" placeholder="Authorization или token" /><input id="streamHlsAccessKeyValue" value="${stream.hls_access_key_value||''}" autocomplete="off" placeholder="Bearer TOKEN / значение ключа" /></div><div class="row-inline compact-row" style="margin-top:8px"><input id="streamHlsUserAgent" value="${stream.hls_user_agent||'Mozilla/5.0 TVStreammerSAT5'}" placeholder="User-Agent" /></div><small>Ключ индивидуален для этого канала. Auto: URL *.m3u8 открывается как HLS, остальные HTTP/HTTPS URL — как single-request MPEG-TS. Для HLS без .m3u8 выбери режим HLS вручную. Для HTTP MPEG-TS ключ применяется к единственному запросу; для HLS — к manifest, variant playlist, сегментам и EXT-X-KEY. Если ключ уже находится в URL, оставь «Без ключа». Для Authorization указывай полное значение, например Bearer xxxxx.</small></div>
+        <div class="form-row full"><label>Имя плитки</label><input class="compact" id="streamName" value="${escapeHtmlValue(stream.name||'')}" placeholder="Belarus 5" /></div>
+        <div class="form-row full"><div class="input-main-row"><div class="form-row"><label>Входной URL (Основной)</label><input id="streamInput" value="${escapeHtmlValue(stream.input_uri||'')}" placeholder="rtsp://camera/live, udp://@:9087, udp://239.1.1.1:1234 или https://host/live.m3u8" /></div><div class="form-row"><label>Интерфейс входа</label><select id="streamInputInterface"><option value="">Auto / все интерфейсы</option>${inputOptions}</select></div><div class="form-row"><label>Режим входа</label><select id="streamInputMode" onchange="updateHlsSynchronizationVisibility()"><option value="auto" ${(!stream.input_mode || stream.input_mode==='auto')?'selected':''}>Auto</option><option value="rtsp-tcp" ${stream.input_mode==='rtsp-tcp'?'selected':''}>RTSP TCP</option><option value="rtsp-udp" ${stream.input_mode==='rtsp-udp'?'selected':''}>RTSP UDP</option><option value="rtsp-auto" ${stream.input_mode==='rtsp-auto'?'selected':''}>RTSP Auto</option><option value="hls" ${stream.input_mode==='hls'?'selected':''}>HLS</option><option value="http-ts" ${stream.input_mode==='http-ts'?'selected':''}>HTTP MPEG-TS</option><option value="caller" ${stream.input_mode==='caller'?'selected':''}>SRT Caller</option><option value="listener" ${stream.input_mode==='listener'?'selected':''}>SRT Listener</option></select></div></div></div>
+        <div class="form-row full"><label>HTTP / HLS доступ</label><div class="row-inline compact-row"><select id="streamHlsAccessKeyMode"><option value="none" ${(!stream.hls_access_key_mode||stream.hls_access_key_mode==='none')?'selected':''}>Без ключа</option><option value="header" ${stream.hls_access_key_mode==='header'?'selected':''}>HTTP Header</option><option value="query" ${stream.hls_access_key_mode==='query'?'selected':''}>Query parameter</option></select><input id="streamHlsAccessKeyName" value="${escapeHtmlValue(stream.hls_access_key_name||'Authorization')}" placeholder="Authorization или token" /><input id="streamHlsAccessKeyValue" value="${escapeHtmlValue(stream.hls_access_key_value||'')}" autocomplete="off" placeholder="Bearer TOKEN / значение ключа" /></div><div class="row-inline compact-row" style="margin-top:8px"><input id="streamHlsUserAgent" value="${escapeHtmlValue(stream.hls_user_agent||'Mozilla/5.0 TVStreammerSAT5')}" placeholder="User-Agent" /></div><small>Ключ индивидуален для этого канала. Auto: URL *.m3u8 открывается как HLS, остальные HTTP/HTTPS URL — как single-request MPEG-TS. Для HLS без .m3u8 выбери режим HLS вручную. Для HTTP MPEG-TS ключ применяется к единственному запросу; для HLS — к manifest, variant playlist, сегментам и EXT-X-KEY. Если ключ уже находится в URL, оставь «Без ключа». Для Authorization указывай полное значение, например Bearer xxxxx.</small></div>
         <div class="form-row full" id="streamHlsSynchronizationRow" style="display:${stream.input_mode==='hls'?'':'none'}"><label>HLS синхронизация</label><div class="checkbox-inline"><input id="streamHlsSlowPcrAssist" type="checkbox" ${stream.hls_slow_pcr_assist ? 'checked' : ''} onchange="if(this.checked){const x=document.getElementById('streamHlsPcrPhasePacing');if(x)x.checked=false;}" /><span>Provider PCR clock (ручной режим)</span></div><small>Для каналов вроде TV3: после стабилизации provider PCR становится фиксированным media clock. Транспортный PCR остаётся синтетическим 20 ms.</small><div class="checkbox-inline" style="margin-top:8px"><input id="streamHlsPcrPhasePacing" type="checkbox" ${stream.hls_pcr_phase_pacing ? 'checked' : ''} onchange="if(this.checked){const x=document.getElementById('streamHlsSlowPcrAssist');if(x)x.checked=false;}" /><span>Provider PCR deadline shaper (ручной режим)</span></div><small>203.41: для HLS с сильными VBR burst между provider PCR. Шейпер держит ограниченный lookahead 750 ms, заранее видит будущие PCR deadlines и распределяет burst по предыдущим свободным CBR-слотам, не превышая полезный потолок выхода. В output-path нет ожидания PCR, нет feedback PLL и catch-up. Внешний UDP остаётся CBR с synthetic PCR 20 ms и NULL stuffing. Не включать вместе с Provider PCR clock.</small></div>
         <div class="form-row full" id="streamCamRow" style="display:${String(stream.input_uri||'').startsWith('dvb://')?'': 'none'}"><label>CAM client (scrambled DVB)</label><select id="streamConditionalAccessClient">${camOptions}</select><small>Select a CAM/Newcamd client for encrypted DVB services. FTA streams do not use this setting.</small></div>
-        <div class="form-row full"><label>Резерв / файл замены</label><div class="backup-source"><select id="streamBackupInputType" onchange="updateBackupInputMode()"><option value="url" ${(!stream.backup_input_type || stream.backup_input_type==='url')?'selected':''}>URL резерва</option><option value="file" ${stream.backup_input_type==='file'?'selected':''}>Файл замены</option></select><input id="streamBackupInput" value="${stream.backup_input_uri||''}" placeholder="http://192.168.1.2/..." /><div class="backup-library" id="streamBackupLibrary"><button class="backup-library-button" id="streamBackupLibraryButton" type="button" onclick="toggleBackupFileLibrary()">Выбрать ранее загруженный файл</button><div class="backup-library-menu" id="streamBackupLibraryMenu"></div></div><div class="backup-file-row" id="streamBackupFileRow"><input id="streamBackupFilePicker" type="file" accept="video/*,.ts,.mts,.m2ts,.mp4,.mov,.m4v" onchange="uploadBackupReplacementFile('${stream.id}', this)" /><span id="streamBackupUploadStatus"></span></div></div></div>
+        <div class="form-row full"><label>Резерв / файл замены</label><div class="backup-source"><select id="streamBackupInputType" onchange="updateBackupInputMode()"><option value="url" ${(!stream.backup_input_type || stream.backup_input_type==='url')?'selected':''}>URL резерва</option><option value="file" ${stream.backup_input_type==='file'?'selected':''}>Файл замены</option></select><input id="streamBackupInput" value="${escapeHtmlValue(stream.backup_input_uri||'')}" placeholder="http://192.168.1.2/..." /><div class="backup-library" id="streamBackupLibrary"><button class="backup-library-button" id="streamBackupLibraryButton" type="button" onclick="toggleBackupFileLibrary()">Выбрать ранее загруженный файл</button><div class="backup-library-menu" id="streamBackupLibraryMenu"></div></div><div class="backup-file-row" id="streamBackupFileRow"><input id="streamBackupFilePicker" type="file" accept="video/*,.ts,.mts,.m2ts,.mp4,.mov,.m4v" data-stream-id="${escapeHtmlValue(stream.id)}" onchange="uploadBackupReplacementFile(this.dataset.streamId, this)" /><span id="streamBackupUploadStatus"></span></div></div></div>
         <div class="form-row full" id="streamBackupFileLoopRow"><label>Зациклить файл замены</label><div class="checkbox-inline"><input id="streamBackupFileLoop" type="checkbox" ${stream.backup_file_loop ? 'checked' : ''} /><span>Повторять до появления основного потока</span></div></div>
         <div class="form-row full"><label>Тестовая таблица</label><div class="checkbox-inline"><input id="streamTestPattern" type="checkbox" ${stream.test_pattern ? 'checked' : ''} /><span>Использовать вместо входных потоков</span></div></div>
         <div class="form-row full"><label>Интерфейс вывода</label><select class="compact" id="streamInterface" onchange="syncOutputHostWithInterface()"><option value="">Auto / все интерфейсы</option>${outputOptions}</select></div>
@@ -6666,18 +6742,18 @@ function openStreamForm(stream) {
         <div class="form-row full"><label>V-PID / A-PID</label><div class="row-inline compact-row"><input class="compact" id="streamVideoPid" type="number" min="16" max="8190" value="${stream.video_pid||258}" placeholder="V-PID 258" /><input class="compact" id="streamAudioPid" type="number" min="16" max="8190" value="${stream.audio_pid||257}" placeholder="A-PID 257" /></div></div>
         <div class="form-row"><label>SID входа</label><input class="compact" id="streamInputServiceId" type="number" min="0" max="65535" value="${stream.input_service_id ?? 0}" placeholder="0 = Auto" /><small>0 = автоопределение SID из PAT; значение 1–65535 = выбрать конкретный входной канал.</small></div>
         <div class="form-row"><label>SID выхода</label><input class="compact" id="streamServiceId" type="number" min="1" max="65535" value="${stream.service_id||1}" placeholder="1" /></div>
-        <div class="form-row full"><label>Имя Канала и Провайдер</label><div class="row-inline compact-row"><input class="compact" id="streamServiceName" value="${stream.service_name||''}" placeholder="Belarus 5" /><input class="compact" id="streamProvider" value="${stream.service_provider||''}" placeholder="BTRC" /></div></div>
+        <div class="form-row full"><label>Имя Канала и Провайдер</label><div class="row-inline compact-row"><input class="compact" id="streamServiceName" value="${escapeHtmlValue(stream.service_name||'')}" placeholder="Belarus 5" /><input class="compact" id="streamProvider" value="${escapeHtmlValue(stream.service_provider||'')}" placeholder="BTRC" /></div></div>
         <div class="form-row full"><label>Target bitrate (кбит/с, для CBR)</label><input id="streamBitrate" type="number" value="${Math.round((stream.target_bitrate||2000000)/1000)}" placeholder="2000" /></div>
-        <div class="form-row full"><label>Транскодирование</label><div class="checkbox-inline"><input id="streamTranscodeEnabled" type="checkbox" ${(stream.transcode_enabled && transcoderAvailable) ? 'checked' : ''} ${transcoderAvailable ? '' : 'disabled'} onchange="updateTranscodeControls()" /><span>Обрабатывать видео/аудио: транскодирование или независимый проброс оригинальных потоков</span></div><small style="color:${transcoderAvailable ? '#7ee2a8' : '#ff9f9f'}">${transcoderStatus}</small></div>
-        <div class="form-row full"><label>HLS архив (DVR)</label><div class="row-inline compact-row"><label class="checkbox-inline"><input id="streamHlsArchiveEnabled" type="checkbox" ${stream.hls_archive_enabled?'checked':''} /><span>Записывать архив</span></label><input id="streamHlsArchiveHours" type="number" min="1" max="168" value="${stream.hls_archive_hours||24}" style="max-width:110px" /><span>часов</span><input id="streamHlsArchivePath" value="${stream.hls_archive_path||'/var/lib/tvstreammersat5/archive'}" placeholder="/var/lib/tvstreammersat5/archive" /></div><small>Архив сохраняет HLS TS-сегменты на диск. Совместимые URL: /КАНАЛ/archive-UTC-ДЛИТЕЛЬНОСТЬ.m3u8, /КАНАЛ/rewind-СЕКУНДЫ.m3u8, /КАНАЛ/timeshift_rel-СЕКУНДЫ.m3u8, /КАНАЛ/timeshift_abs-UTC.m3u8.</small></div>
-        <div class="form-row full" id="streamTranscodeControls" style="display:${(stream.transcode_enabled && transcoderAvailable)?'block':'none'}"><label>Параметры транскодирования</label><div class="row-inline compact-row"><select id="streamTranscodeVideoCodec" onchange="updateTranscodeVideoControls()"><option value="h264" ${(stream.transcode_video_codec||'h264')==='h264'?'selected':''}>Видео: H.264 транскодирование</option><option value="hevc" ${stream.transcode_video_codec==='hevc'?'selected':''} ${transcoderInfo.hevc_video_encoder?'':'disabled'}>Видео: H.265 / HEVC транскодирование${transcoderInfo.hevc_video_encoder?'':' (недоступно)'}</option><option value="copy" ${stream.transcode_video_codec==='copy'?'selected':''}>Видео: проброс оригинального потока</option></select><select id="streamTranscodeVideoEncoder" onchange="updateTranscodeVideoControls()"><option value="auto" ${(!stream.transcode_video_encoder||stream.transcode_video_encoder==='auto')?'selected':''}>Кодировщик: Auto (NVENC → Intel → CPU)</option><option value="nvenc" ${stream.transcode_video_encoder==='nvenc'?'selected':''} ${transcoderInfo.nvenc_available?'':'disabled'}>Кодировщик: NVIDIA NVENC${transcoderInfo.nvenc_available?'':' (недоступен)'}</option><option value="intel" ${stream.transcode_video_encoder==='intel'?'selected':''} ${transcoderInfo.intel_available?'':'disabled'}>Кодировщик: Intel Quick Sync / VA${transcoderInfo.intel_available ? ` (${transcoderInfo.intel_encoder})` : ' (недоступен)'}</option><option value="x264" ${stream.transcode_video_encoder==='x264'?'selected':''} ${transcoderInfo.x264_available?'':'disabled'}>Кодировщик: CPU x264/x265${transcoderInfo.x264_available?'':' (недоступен)'}</option></select><select id="streamTranscodeResolution" onchange="applyRecommendedTranscodeBitrate()"><option value="3840x2160" ${stream.transcode_resolution==='3840x2160'?'selected':''}>3840×2160 (4K UHD)</option><option value="3200x1800" ${stream.transcode_resolution==='3200x1800'?'selected':''}>3200×1800 (3K)</option><option value="2560x1440" ${stream.transcode_resolution==='2560x1440'?'selected':''}>2560×1440 (2K QHD)</option><option value="1920x1080" ${(!stream.transcode_resolution||stream.transcode_resolution==='1920x1080')?'selected':''}>1920×1080 (Full HD)</option><option value="1280x720" ${stream.transcode_resolution==='1280x720'?'selected':''}>1280×720 (HD)</option><option value="1024x576" ${stream.transcode_resolution==='1024x576'?'selected':''}>1024×576 (SD 16:9, квадратный пиксель)</option><option value="720x576_16_9" ${stream.transcode_resolution==='720x576_16_9'?'selected':''}>720×576 (SD 16:9, анаморфный)</option><option value="720x576" ${stream.transcode_resolution==='720x576'?'selected':''}>720×576 (PAL SD, прежний режим)</option></select><input id="streamTranscodeBitrate" type="number" min="500" max="100000" step="100" value="${Math.round((stream.transcode_video_bitrate||6000000)/1000)}" placeholder="6000" /><span>кбит/с CBR</span></div><div class="row-inline compact-row" style="margin-top:8px"><select id="streamTranscodeAudioCodec" onchange="updateTranscodeAudioControls()"><option value="copy" ${stream.transcode_audio_codec==='copy'?'selected':''}>Аудио: проброс оригинальной дорожки</option><option value="aac" ${(stream.transcode_audio_codec||'aac')==='aac'?'selected':''} ${transcoderInfo.aac_encoder?'':'disabled'}>Аудио: AAC-LC${transcoderInfo.aac_encoder?'':' (недоступен)'}</option><option value="mp3" ${stream.transcode_audio_codec==='mp3'?'selected':''} ${transcoderInfo.mp3_encoder?'':'disabled'}>Аудио: MP3${transcoderInfo.mp3_encoder?'':' (недоступен)'}</option></select><select id="streamTranscodeAudioBitrate" ${stream.transcode_audio_codec==='copy'?'disabled':''}><option value="96000" ${(stream.transcode_audio_bitrate||192000)===96000?'selected':''}>96 кбит/с</option><option value="128000" ${(stream.transcode_audio_bitrate||192000)===128000?'selected':''}>128 кбит/с</option><option value="160000" ${(stream.transcode_audio_bitrate||192000)===160000?'selected':''}>160 кбит/с</option><option value="192000" ${(stream.transcode_audio_bitrate||192000)===192000?'selected':''}>192 кбит/с</option><option value="256000" ${(stream.transcode_audio_bitrate||192000)===256000?'selected':''}>256 кбит/с</option><option value="320000" ${(stream.transcode_audio_bitrate||192000)===320000?'selected':''}>320 кбит/с</option></select><span>аудио</span></div><div class="row-inline compact-row" style="margin-top:8px"><label class="checkbox-inline"><input id="streamTranscodeMultibitrate" type="checkbox" ${stream.transcode_multibitrate_enabled?'checked':''} /><span>Мультибитрейт HLS (ABR)</span></label></div><small>203.75: H.264 и H.265/HEVC поддерживают Auto/NVENC/Intel/CPU (x264/x265). При включённом Multibitrate и наличии HLS-выхода создаётся master.m3u8: основной профиль плюс до трёх более низких профилей. Для RTMP/YouTube HEVC не используется.</small></div>
+        <div class="form-row full"><label>Транскодирование</label><div class="checkbox-inline"><input id="streamTranscodeEnabled" type="checkbox" ${(stream.transcode_enabled && transcoderAvailable) ? 'checked' : ''} ${transcoderAvailable ? '' : 'disabled'} onchange="updateTranscodeControls()" /><span>Обрабатывать видео/аудио: транскодирование или независимый проброс оригинальных потоков</span></div><small style="color:${transcoderAvailable ? '#7ee2a8' : '#ff9f9f'}">${escapeHtmlValue(transcoderStatus)}</small></div>
+        <div class="form-row full"><label>HLS архив (DVR)</label><div class="row-inline compact-row"><label class="checkbox-inline"><input id="streamHlsArchiveEnabled" type="checkbox" ${stream.hls_archive_enabled?'checked':''} /><span>Записывать архив</span></label><input id="streamHlsArchiveHours" type="number" min="1" max="168" value="${stream.hls_archive_hours||24}" style="max-width:110px" /><span>часов</span><input id="streamHlsArchivePath" value="${escapeHtmlValue(stream.hls_archive_path||'/var/lib/tvstreammersat5/archive')}" placeholder="/var/lib/tvstreammersat5/archive" /></div><small>Архив сохраняет HLS TS-сегменты на диск. Совместимые URL: /КАНАЛ/archive-UTC-ДЛИТЕЛЬНОСТЬ.m3u8, /КАНАЛ/rewind-СЕКУНДЫ.m3u8, /КАНАЛ/timeshift_rel-СЕКУНДЫ.m3u8, /КАНАЛ/timeshift_abs-UTC.m3u8.</small></div>
+        <div class="form-row full" id="streamTranscodeControls" style="display:${(stream.transcode_enabled && transcoderAvailable)?'block':'none'}"><label>Параметры транскодирования</label><div class="row-inline compact-row"><select id="streamTranscodeVideoCodec" onchange="updateTranscodeVideoControls()"><option value="h264" ${(stream.transcode_video_codec||'h264')==='h264'?'selected':''}>Видео: H.264 транскодирование</option><option value="hevc" ${stream.transcode_video_codec==='hevc'?'selected':''} ${transcoderInfo.hevc_video_encoder?'':'disabled'}>Видео: H.265 / HEVC транскодирование${transcoderInfo.hevc_video_encoder?'':' (недоступно)'}</option><option value="copy" ${stream.transcode_video_codec==='copy'?'selected':''}>Видео: проброс оригинального потока</option></select><select id="streamTranscodeVideoEncoder" onchange="updateTranscodeVideoControls()"><option value="auto" ${(!stream.transcode_video_encoder||stream.transcode_video_encoder==='auto')?'selected':''}>Кодировщик: Auto (NVENC → Intel → CPU)</option><option value="nvenc" ${stream.transcode_video_encoder==='nvenc'?'selected':''} ${transcoderInfo.nvenc_available?'':'disabled'}>Кодировщик: NVIDIA NVENC${transcoderInfo.nvenc_available?'':' (недоступен)'}</option><option value="intel" ${stream.transcode_video_encoder==='intel'?'selected':''} ${transcoderInfo.intel_available?'':'disabled'}>Кодировщик: Intel Quick Sync / VA${transcoderInfo.intel_available ? ` (${escapeHtmlValue(transcoderInfo.intel_encoder)})` : ' (недоступен)'}</option><option value="x264" ${stream.transcode_video_encoder==='x264'?'selected':''} ${transcoderInfo.x264_available?'':'disabled'}>Кодировщик: CPU x264/x265${transcoderInfo.x264_available?'':' (недоступен)'}</option></select><select id="streamTranscodeResolution" onchange="applyRecommendedTranscodeBitrate()"><option value="3840x2160" ${stream.transcode_resolution==='3840x2160'?'selected':''}>3840×2160 (4K UHD)</option><option value="3200x1800" ${stream.transcode_resolution==='3200x1800'?'selected':''}>3200×1800 (3K)</option><option value="2560x1440" ${stream.transcode_resolution==='2560x1440'?'selected':''}>2560×1440 (2K QHD)</option><option value="1920x1080" ${(!stream.transcode_resolution||stream.transcode_resolution==='1920x1080')?'selected':''}>1920×1080 (Full HD)</option><option value="1280x720" ${stream.transcode_resolution==='1280x720'?'selected':''}>1280×720 (HD)</option><option value="1024x576" ${stream.transcode_resolution==='1024x576'?'selected':''}>1024×576 (SD 16:9, квадратный пиксель)</option><option value="720x576_16_9" ${stream.transcode_resolution==='720x576_16_9'?'selected':''}>720×576 (SD 16:9, анаморфный)</option><option value="720x576" ${stream.transcode_resolution==='720x576'?'selected':''}>720×576 (PAL SD, прежний режим)</option></select><input id="streamTranscodeBitrate" type="number" min="500" max="100000" step="100" value="${Math.round((stream.transcode_video_bitrate||6000000)/1000)}" placeholder="6000" /><span>кбит/с CBR</span></div><div class="row-inline compact-row" style="margin-top:8px"><select id="streamTranscodeAudioCodec" onchange="updateTranscodeAudioControls()"><option value="copy" ${stream.transcode_audio_codec==='copy'?'selected':''}>Аудио: проброс оригинальной дорожки</option><option value="aac" ${(stream.transcode_audio_codec||'aac')==='aac'?'selected':''} ${transcoderInfo.aac_encoder?'':'disabled'}>Аудио: AAC-LC${transcoderInfo.aac_encoder?'':' (недоступен)'}</option><option value="mp3" ${stream.transcode_audio_codec==='mp3'?'selected':''} ${transcoderInfo.mp3_encoder?'':'disabled'}>Аудио: MP3${transcoderInfo.mp3_encoder?'':' (недоступен)'}</option></select><select id="streamTranscodeAudioBitrate" ${stream.transcode_audio_codec==='copy'?'disabled':''}><option value="96000" ${(stream.transcode_audio_bitrate||192000)===96000?'selected':''}>96 кбит/с</option><option value="128000" ${(stream.transcode_audio_bitrate||192000)===128000?'selected':''}>128 кбит/с</option><option value="160000" ${(stream.transcode_audio_bitrate||192000)===160000?'selected':''}>160 кбит/с</option><option value="192000" ${(stream.transcode_audio_bitrate||192000)===192000?'selected':''}>192 кбит/с</option><option value="256000" ${(stream.transcode_audio_bitrate||192000)===256000?'selected':''}>256 кбит/с</option><option value="320000" ${(stream.transcode_audio_bitrate||192000)===320000?'selected':''}>320 кбит/с</option></select><span>аудио</span></div><div class="row-inline compact-row" style="margin-top:8px"><label class="checkbox-inline"><input id="streamTranscodeMultibitrate" type="checkbox" ${stream.transcode_multibitrate_enabled?'checked':''} /><span>Мультибитрейт HLS (ABR)</span></label></div><small>203.75: H.264 и H.265/HEVC поддерживают Auto/NVENC/Intel/CPU (x264/x265). При включённом Multibitrate и наличии HLS-выхода создаётся master.m3u8: основной профиль плюс до трёх более низких профилей. Для RTMP/YouTube HEVC не используется.</small></div>
         <div class="form-row full"><label>Автозапуск</label><div class="checkbox-inline"><input id="streamAutoStart" type="checkbox" ${stream.auto_start ? 'checked' : ''} /><span>Запускать после перезапуска программы</span></div></div>
         <div class="form-row full" id="streamCbrRow"><label>Включить CBR</label><div class="checkbox-inline"><input id="streamCbr" type="checkbox" ${stream.cbr ? 'checked' : ''} onchange="syncUdpCbrModeFromCheckbox()" /><span>CBR</span></div><small>CBR поддерживается для UDP, HTTP, HLS и SRT.</small></div>
         <div class="form-row full"><label>Включить Remap</label><div class="checkbox-inline"><input id="streamRemapEnabled" type="checkbox" ${stream.remap_enabled ? 'checked' : ''} /><span>Remap PID / Service</span></div><small>Для MPEG-TS: SID входа 0 = автоопределение программы из PAT; ненулевой SID выбирает конкретный входной канал. SID выхода всегда задаётся отдельно и используется для Remap в PAT/PMT/SDT. V-PID и A-PID задают выходные PID.</small></div>
       </div>
       <div class="modal-actions">
         <button class="button-secondary" onclick="closeModal()">Отмена</button>
-        <button class="button-primary" onclick="saveStream('${stream.id}')">Сохранить</button>
+        <button class="button-primary" data-stream-id="${escapeHtmlValue(stream.id)}" onclick="saveStream(this.dataset.streamId)">Сохранить</button>
       </div>
     `);
     document.getElementById('modalContent').classList.add('stream-modal');
@@ -7276,7 +7352,7 @@ function drawQualityChart(data) {
     };
   };
   const statsRow = (dotClass, name, unit, stats, formatter) => `
-    <div class="metric-name"><i class="quality-line ${dotClass}"></i>${name}</div>
+    <div class="metric-name"><i class="quality-line ${dotClass}"></i>${escapeHtmlValue(name)}</div>
     <div class="unit">${unit}</div>
     <div class="value">${formatter(stats.last)}</div>
     <div class="value">${formatter(stats.min)}</div>
@@ -7456,7 +7532,7 @@ function drawQualityChart(data) {
         const inputCc = Number(s.input_cc_errors ?? s.cc_errors ?? 0);
         const outputCc = Number(s.output_cc_errors || 0);
         const markerColor = outputCc > 0 ? '#ff4f9a' : (inputCc > 0 ? '#ff9f1a' : qualityColor(s.level));
-        return `<div><span style="color:${markerColor}">●</span><span>${formatTime(s.ts, data.period_seconds)}</span><span>${s.message} · CC input: ${inputCc} · CC output: ${outputCc}</span></div>`;
+        return `<div><span style="color:${markerColor}">●</span><span>${formatTime(s.ts, data.period_seconds)}</span><span>${escapeHtmlValue(s.message)} · CC input: ${inputCc} · CC output: ${outputCc}</span></div>`;
       }).join('')
     : '<div><span style="color:#17c261">●</span><span>За выбранный период входных и выходных CC-errors и других ошибок нет</span></div>';
 }

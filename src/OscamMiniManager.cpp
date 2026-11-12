@@ -904,6 +904,18 @@ input,select{background:#111d2f;border:1px solid #40536c;color:#f6f9ff;min-width
 input[type=checkbox]{min-width:auto;accent-color:#3b82f6}button,a.btn{background:#2563eb;border-radius:8px;padding:10px 15px;font-weight:600;line-height:1.3}button:hover,a.btn:hover{filter:brightness(1.16);color:white}button:focus-visible,a:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}.alt{background:#334155!important}.danger{background:#9f394b!important}
 .compact-item{background:#132034;border-color:#34455e}.compact-head{background:#203047}.compact-head:hover{background:#2b405a}.compact-body{border-color:#34455e}pre{background:#0c1523;color:#d1dfef}.language-label{display:flex;flex-direction:row;align-items:center;gap:8px}.language-label select{padding:7px 10px}
 @media(max-width:760px){.w{padding:16px}.w>.row:first-child{padding:16px}.c{padding:16px}.language-label{margin-left:auto}}
+/* Match the light broadcast-monitoring skin of the main dashboard. */
+body{background:#f4f7f9;color:#283644}
+.w>.row:first-child{background:#fff;border:1px solid #d9e4ea;border-left:3px solid #318bb8;border-radius:4px;box-shadow:0 2px 12px #1e394b0f}
+.c{background:#fff;border:1px solid #dbe4ea;border-radius:4px;box-shadow:0 2px 7px #27485c0a}
+.c h3{color:#2a4050}.c p,.hint{color:#657d8c}label{color:#526e7e}
+input,select{background:#fff;color:#293f4f;border:1px solid #cddce4;border-radius:4px}
+button,a.btn{background:#287eaf;border-radius:4px}button:hover,a.btn:hover{filter:brightness(.94);color:#fff}
+.alt{background:#edf6fa!important;color:#2b789e!important;border:1px solid #cbdee8!important}.danger{background:#fff0f0!important;color:#a83c43!important;border:1px solid #e9c4c6!important}
+.status-ok,.success,.activity-active{color:#217b43}.status-bad,.error,.activity-down{color:#b13940}.activity-idle{color:#896011}.activity-disabled{color:#72818a}
+.compact-item{background:#fff;border-color:#dbe6eb;border-radius:4px}.compact-head{background:#f4f9fb;color:#304b5b}.compact-head:hover{background:#eaf4f7}.compact-sub,.chev{color:#687f8d}.compact-body{border-color:#dbe6eb}
+pre{background:#172737;color:#d5e3eb;border-radius:4px}input[type=checkbox]{accent-color:#2788b5}
+
 </style>
 </head>
 <body><div class="w">

@@ -128,6 +128,17 @@ if(TVSTREAMMERSAT5_BUILD_TESTS)
     enable_testing()
     # 203.76: the three behavioural tests that already existed in tests/ were
     # never compiled by any build; now they run under ctest.
+    add_executable(tvstreammersat5_test_config_patch tests/test_config_patch.cpp)
+    target_include_directories(tvstreammersat5_test_config_patch PRIVATE ${CMAKE_SOURCE_DIR}/src ${JSONCPP_INCLUDE_DIRS})
+    target_link_libraries(tvstreammersat5_test_config_patch ${JSONCPP_LIBRARIES})
+    tvstreammersat5_apply_warnings(tvstreammersat5_test_config_patch)
+    add_test(NAME config_patch_preserves_unspecified_fields COMMAND tvstreammersat5_test_config_patch)
+
+    add_executable(tvstreammersat5_test_atomic_config tests/test_atomic_config.cpp)
+    target_include_directories(tvstreammersat5_test_atomic_config PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    tvstreammersat5_apply_warnings(tvstreammersat5_test_atomic_config)
+    add_test(NAME atomic_private_config COMMAND tvstreammersat5_test_atomic_config)
+
     add_executable(tvstreammersat5_test_http_origin tests/test_http_origin_20376.cpp)
     target_include_directories(tvstreammersat5_test_http_origin PRIVATE ${CMAKE_SOURCE_DIR}/src)
     tvstreammersat5_apply_warnings(tvstreammersat5_test_http_origin)
