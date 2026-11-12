@@ -3,6 +3,14 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 Las versiones siguen el esquema del proyecto original (`203.xx`).
 
+## En desarrollo
+
+- Compatibilidad de compilación para la API de solicitud de pads de GStreamer
+  1.16 y 1.20+. Ubuntu 20.04 sigue siendo experimental hasta validar CI y ejecución.
+
+- Un solo comando detecta archivos `config.txt` de Astra o Flussonic y prepara
+  una copia de revisión; permite aceptar expresamente una conversión parcial.
+
 ## [203.78-rc1] - 2026-11-10 — candidata de pruebas
 
 - Vistas previas de migración Astra y Flussonic sin ejecutar entradas ni

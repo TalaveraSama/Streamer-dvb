@@ -3,7 +3,9 @@
 `scripts/import_flussonic_channels.py` analiza una configuración de texto de
 Flussonic y prepara una vista previa o un archivo de revisión separado. No
 modifica la configuración activa, no ejecuta los valores del archivo ni arranca
-los canales. Se ha probado con ejemplos sintéticos, no en un sistema real.
+los canales. Se ha probado con ejemplos sintéticos, no en un sistema real. La utilidad
+específica está en `v203.78-rc1`; el importador único `import_config.py` aún
+no se ha publicado.
 
 ## Alcance
 
@@ -72,7 +74,9 @@ Repite `--interface` por cada interfaz. `--m4f-template` permite configurar
 una ruta HLS alternativa; sin él se usa la conversión indicada arriba. Los argumentos opcionales
 `--confirm-backup-order`, `--omit-meta`, `--allow-query` y
 `--allow-duplicate-udp` implican las decisiones y riesgos descritos arriba.
-Si existen entradas incompatibles no se genera el archivo. Las entradas y
+Si existen entradas incompatibles no se genera el archivo salvo que se acepten
+las omisiones con `--allow-partial`; los conflictos UDP requieren confirmación
+adicional. Las entradas y
 salidas no convertidas deben revisarse y configurarse manualmente.
 
 No reemplaces la configuración activa sin respaldo, ventana de mantenimiento y

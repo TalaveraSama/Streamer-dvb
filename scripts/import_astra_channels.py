@@ -15,6 +15,34 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 
 MAX_BYTES = 64 * 1024 * 1024
 SAFE_ID = re.compile(r'^[A-Za-z0-9_-]{1,64}$')
+REPORT_LABELS = {
+    'importable':'canales preparados', 'dvb_importable':'canales DVB preparados',
+    'http_importable':'canales HTTP preparados', 'total':'canales encontrados',
+    'source_disabled':'canales deshabilitados en el origen', 'duplicate':'canales duplicados',
+    'duplicate_id':'identificadores ya existentes', 'invalid_record':'registro inválido',
+    'unsupported_inputs':'entradas múltiples o inválidas', 'unsupported_input':'entrada no compatible',
+    'unsupported_input_count':'cantidad de entradas no compatible', 'invalid_id_or_name':'identificador o nombre inválido',
+    'invalid_id':'identificador inválido', 'invalid_name':'nombre inválido', 'invalid_provider':'proveedor inválido',
+    'invalid_disabled':'estado deshabilitado inválido', 'ambiguous_fields':'campos repetidos',
+    'dvb_needs_adapter_and_lnb_confirmation':'confirma adaptadores y valores LNB',
+    'dvb_needs_diseqc_mapping':'requiere mapeo DiSEqC', 'invalid_or_missing_tuner':'sintonizador ausente o inválido',
+    'invalid_tuning':'parámetros de sintonía inválidos', 'rejected_unsafe_or_unsupported':'entrada insegura o no compatible rechazada',
+    'source_outputs_not_imported':'salidas originales no importadas',
+    'no_free_placeholder_port':'sin puerto local provisional libre',
+    'input_needs_review':'entrada inválida o con consulta que requiere revisión',
+    'unsafe_m4f':'entrada m4f insegura o inválida', 'm4f_template_needs_port':'la plantilla m4f requiere puerto',
+    'invalid_m4f_template':'plantilla m4f inválida', 'backup_order_needs_confirmation':'confirma orden de entradas principal y reserva',
+    'incompatible_backup_modes':'modos de entrada y reserva incompatibles',
+    'interface_needs_mapping':'confirma el mapeo de interfaz', 'invalid_udp':'destino UDP inválido',
+    'unsupported_push':'salida no compatible', 'non_udp_push_omitted':'salidas no UDP omitidas',
+    'no_udp_placeholder':'salidas locales provisionales', 'udp_endpoint_conflicts':'destinos UDP duplicados',
+    'meta_needs_review':'metadatos requieren revisión', 'meta_not_converted':'metadatos no convertidos',
+    'unconverted_directives':'opciones no convertidas',
+}
+
+
+def report_label(reason):
+    return REPORT_LABELS.get(reason, 'revisar')
 
 
 def load_json(path):
@@ -128,14 +156,20 @@ def make_plan(source, target, options):
 
     report = Counter()
     planned = []
+    def skipped(item, reason):
+        report[reason] += 1
+        if options.details:
+            sid = item.get('id', '') if isinstance(item, dict) else ''
+            sid = sid if isinstance(sid, str) and SAFE_ID.fullmatch(sid) else '[id no válido]'
+            print(f'Pendiente: {sid} — {reason} ({report_label(reason)})')
     port = options.base_port
     for item in channels:
         if not isinstance(item, dict):
-            report['invalid_record'] += 1
+            skipped(item, 'invalid_record')
             continue
         inputs = item.get('input')
         if not isinstance(inputs, list) or len(inputs) != 1 or not isinstance(inputs[0], str):
-            report['unsupported_inputs'] += 1
+            skipped(item, 'unsupported_inputs')
             continue
         source_uri = inputs[0]
         parsed = urlsplit(source_uri)
@@ -143,48 +177,48 @@ def make_plan(source, target, options):
         sid = 0
         if scheme == 'dvb':
             if not options.confirm_adapters or None in (options.lof1, options.lof2, options.slof):
-                report['dvb_needs_adapter_and_lnb_confirmation'] += 1
+                skipped(item, 'dvb_needs_adapter_and_lnb_confirmation')
                 continue
             # Astra uses the fragment for PNR and CAM. Only the PNR is consumed.
             tuner_id = parsed.netloc
             tuner = tuners.get(tuner_id)
             query = parse_qs(parsed.fragment, keep_blank_values=True)
             if not tuner or parsed.path or parsed.query or len(query.get('pnr', [])) != 1:
-                report['invalid_or_missing_tuner'] += 1
+                skipped(item, 'invalid_or_missing_tuner')
                 continue
             try:
                 sid = integer(query['pnr'][0], 1, 65535)
                 # DiSEqC numbering differs between applications. Never guess it.
                 if 'diseqc' in tuner and tuner_id not in options.diseqc_map:
-                    report['dvb_needs_diseqc_mapping'] += 1
+                    skipped(item, 'dvb_needs_diseqc_mapping')
                     continue
                 uri = tuner_uri(tuner, options, options.diseqc_map.get(tuner_id, -1))
             except (ValueError, TypeError):
-                report['invalid_tuning'] += 1
+                skipped(item, 'invalid_tuning')
                 continue
             kind = 'dvb'
         elif scheme in ('http', 'https') and safe_http(source_uri):
             uri = source_uri
             kind = 'http'
         else:
-            report['rejected_unsafe_or_unsupported'] += 1
+            skipped(item, 'rejected_unsafe_or_unsupported')
             continue
         original_id = item.get('id', '')
         name = item.get('name', '')
         if (not isinstance(original_id, str) or not SAFE_ID.fullmatch(original_id)
                 or not isinstance(name, str) or not name.strip() or len(name) > 200
                 or any(ord(c) < 32 or c in '<>\"\'`' for c in name)):
-            report['invalid_id_or_name'] += 1
+            skipped(item, 'invalid_id_or_name')
             continue
         stream_id = 'astra-' + original_id
         key = identity(uri, sid)
         if stream_id in used_ids or key in used_inputs:
-            report['duplicate'] += 1
+            skipped(item, 'duplicate')
             continue
         while port in used_ports and port <= 65535:
             port += 1
         if port > 65535:
-            report['no_free_placeholder_port'] += 1
+            skipped(item, 'no_free_placeholder_port')
             continue
         # Loopback output is a placeholder, not an Astra output. Everything is
         # stopped by default, including streams that were enabled in Astra.
@@ -235,6 +269,8 @@ def main():
     parser.add_argument('--slof', type=int, help='Confirmed LNB switching frequency in MHz')
     parser.add_argument('--diseqc', action='append', default=[], metavar='TUNER_ID=SOURCE', help='Explicit target DiSEqC source (-1..7) for a tuner')
     parser.add_argument('--base-port', type=int, default=20000, help='First placeholder UDP loopback port (default 20000)')
+    parser.add_argument('--details', action='store_true', help='Show IDs and reasons for channels needing review')
+    parser.add_argument('--allow-partial', action='store_true', help='Explicitly stage only supported, resolved channels')
     args = parser.parse_args()
     if not 1 <= args.base_port <= 65535:
         parser.error('base-port must be 1..65535')
@@ -251,6 +287,9 @@ def main():
         source = load_json(args.astra)
         target = load_json(args.target)
         result, report = make_plan(source, target, args)
+        print('Vista previa de canales (sin importar ajustes ni credenciales globales):')
+        for key, value in sorted(report.items()):
+            print(f'  {key}: {value} ({report_label(key)})')
         if args.output:
             if not report['importable']:
                 raise ValueError('No new channels to stage')
@@ -258,15 +297,14 @@ def main():
                         'invalid_or_missing_tuner', 'invalid_tuning', 'invalid_id_or_name',
                         'unsupported_inputs', 'invalid_record', 'no_free_placeholder_port')
             unresolved = [f'{key}={report[key]}' for key in blockers if report[key]]
-            if unresolved:
+            if unresolved and not args.allow_partial:
                 raise ValueError('Cannot create an incomplete review file: ' + ', '.join(unresolved))
+            if unresolved:
+                print('WARNING: partial review file; copia parcial: revisa los canales omitidos.')
             # O_EXCL also prevents overwriting either source file.
             write_new(args.output, result)
-        print('Preview of channels (no settings or credentials imported):')
-        for key, value in sorted(report.items()):
-            print(f'  {key}: {value}')
-        print('All imported channels are stopped; outputs are loopback placeholders; CAM/EPG/outputs require manual configuration.')
-        print('The running service was not modified.' + (' Review file created with mode 0600.' if args.output else ' No file was written.'))
+        print('Todos los canales quedan detenidos; configura CAM, EPG y salidas manualmente.')
+        print('El servicio no se modificó.' + (' Copia creada con permisos 0600.' if args.output else ' No se escribió ningún archivo.'))
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print('Import preview failed: ' + str(error), file=sys.stderr)
         return 1

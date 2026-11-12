@@ -216,6 +216,12 @@ fi
 
 run install -d -m 0755 "$INSTALL_DIR"
 run install -m 0755 "$MAIN_BINARY" "$INSTALL_DIR/$APP_NAME"
+if [[ -f "$SOURCE_DIR/scripts/import_config.py" && -f "$SOURCE_DIR/scripts/import_astra_channels.py" && -f "$SOURCE_DIR/scripts/import_flussonic_channels.py" ]]; then
+    run install -d -m 0755 "$INSTALL_DIR/tools"
+    for tool in import_config.py import_astra_channels.py import_flussonic_channels.py; do
+        run install -m 0755 "$SOURCE_DIR/scripts/$tool" "$INSTALL_DIR/tools/$tool"
+    done
+fi
 if [[ -d "$SOURCE_DIR/web/vendor" ]]; then
     run install -d -m 0755 "$INSTALL_DIR/web/vendor"
     for asset in mpegts.min.js hls.min.js adminlte-3.2.0.min.css LICENSE.adminlte; do

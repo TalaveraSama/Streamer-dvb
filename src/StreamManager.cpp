@@ -1,4 +1,5 @@
 #include "StreamManager.h"
+#include "GstCompat.h"
 #include "TsMediaProgress.h"
 #include "TranscoderModule.h"
 #include "StableUdpOutput.h"
@@ -5052,16 +5053,16 @@ GstPad* requestMuxSinkPad(GstElement* mux, uint32_t requestedPid) {
     GstPad* pad = nullptr;
     if (requestedPid > 0) {
         std::string requestedName = "sink_" + std::to_string(requestedPid);
-        pad = gst_element_request_pad_simple(mux, requestedName.c_str());
+        pad = tvsRequestPad(mux, requestedName.c_str());
     }
     if (!pad) {
-        pad = gst_element_request_pad_simple(mux, "sink_%d");
+        pad = tvsRequestPad(mux, "sink_%d");
     }
     return pad;
 }
 
 GstPad* requestFlvMuxSinkPad(GstElement* mux, bool isVideo) {
-    return gst_element_request_pad_simple(mux, isVideo ? "video" : "audio");
+    return tvsRequestPad(mux, isVideo ? "video" : "audio");
 }
 
 uint32_t pidFromDemuxPadName(GstPad* pad) {
@@ -9317,7 +9318,7 @@ bool StreamManager::buildOutputBranches(StreamState* state, GstElement* pipeline
         if (type == "fifo") configureQueue(queue);
         else configureLiveQueue(queue, 1000000000ULL);
 
-        GstPad* teeSrcPad = gst_element_request_pad_simple(tee, "src_%u");
+        GstPad* teeSrcPad = tvsRequestPad(tee, "src_%u");
         GstPad* queueSinkPad = gst_element_get_static_pad(queue, "sink");
         if (!teeSrcPad || !queueSinkPad) {
             if (teeSrcPad) {
@@ -9957,8 +9958,8 @@ bool StreamManager::buildRemapPipeline(
 
         const std::string videoPadName = "sink_" + std::to_string(cfg.videoPid);
         const std::string audioPadName = "sink_" + std::to_string(cfg.audioPid);
-        GstPad* videoPad = gst_element_request_pad_simple(mux, videoPadName.c_str());
-        GstPad* audioPad = gst_element_request_pad_simple(mux, audioPadName.c_str());
+        GstPad* videoPad = tvsRequestPad(mux, videoPadName.c_str());
+        GstPad* audioPad = tvsRequestPad(mux, audioPadName.c_str());
         if (!videoPad || !audioPad) {
             if (videoPad) {
                 gst_element_release_request_pad(mux, videoPad);
@@ -10360,7 +10361,7 @@ void StreamManager::onDemuxPadAdded(GstElement* demux, GstPad* pad, gpointer use
         if (ctx->hlsInputSelector) {
             if (!ctx->hlsDirectSelectorPad) {
                 ctx->hlsDirectSelectorPad =
-                    gst_element_request_pad_simple(ctx->hlsInputSelector, "sink_%u");
+                    tvsRequestPad(ctx->hlsInputSelector, "sink_%u");
             }
             GstPad* directSinkPad = ctx->hlsDirectSelectorPad;
             if (directSinkPad) {
@@ -10642,9 +10643,9 @@ void StreamManager::onDemuxPadAdded(GstElement* demux, GstPad* pad, gpointer use
             muxSinkPad = GST_PAD(gst_object_ref(reservedPad));
         }
     } else if (ctx->hlsSink2) {
-        muxSinkPad = gst_element_request_pad_simple(ctx->mux, isVideo ? "video" : "audio");
+        muxSinkPad = tvsRequestPad(ctx->mux, isVideo ? "video" : "audio");
     } else if (ctx->rtspPush) {
-        muxSinkPad = gst_element_request_pad_simple(ctx->mux, "sink_%u");
+        muxSinkPad = tvsRequestPad(ctx->mux, "sink_%u");
     } else {
         muxSinkPad = ctx->flvMux
             ? requestFlvMuxSinkPad(ctx->mux, isVideo)

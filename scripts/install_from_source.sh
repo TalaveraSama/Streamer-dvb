@@ -94,6 +94,12 @@ for asset in mpegts.min.js hls.min.js adminlte-3.2.0.min.css LICENSE.adminlte; d
     install -m 0644 "${ROOT_DIR}/web/vendor/${asset}" "${PREFIX}/web/vendor/${asset}"
 done
 
+# The two format readers are used by the single config.txt entry point.
+install -d -m 0755 "${PREFIX}/tools"
+for tool in import_config.py import_astra_channels.py import_flussonic_channels.py; do
+    install -m 0755 "${ROOT_DIR}/scripts/${tool}" "${PREFIX}/tools/${tool}"
+done
+
 # OSCam-mini and its seeded configuration (built by cmake/OscamMini.cmake).
 if [[ -f "${ROOT_DIR}/build/oscam-mini/oscam-mini" ]]; then
     install -Dm755 "${ROOT_DIR}/build/oscam-mini/oscam-mini" \

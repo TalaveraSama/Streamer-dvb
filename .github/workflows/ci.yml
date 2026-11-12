@@ -88,6 +88,34 @@ jobs:
       - name: Source-level regression tests
         run: node tests/run-all.js
 
+  ubuntu-20-compat:
+    name: experimental build + test (ubuntu-20.04)
+    runs-on: ubuntu-24.04
+    container: ubuntu:20.04
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Install checkout prerequisites
+        run: |
+          apt-get update
+          apt-get install -y ca-certificates git
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: ./install_deps.sh
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: C++ unit tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Source-level regression tests
+        run: node tests/run-all.js --quiet
+
   static-checks:
     name: static checks
     runs-on: ubuntu-24.04

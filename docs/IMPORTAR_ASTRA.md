@@ -3,7 +3,9 @@
 `scripts/import_astra_channels.py` prepara una **vista previa**, o una copia
 separada de la configuración de TVStreammerSAT5 para revisión. Nunca modifica
 los archivos de entrada, no instala el resultado, no ejecuta comandos ni
-reinicia servicios. Todavía no está publicado ni probado con hardware real.
+reinicia servicios. Los importadores específicos están en `v203.78-rc1`; el importador único
+`import_config.py` aún no se ha publicado. Ninguno se ha probado con hardware
+real.
 
 ## Seguridad
 
@@ -67,7 +69,8 @@ listos para ejecutar. `--diseqc` se repite por cada sintonizador que lo requiera
 Sin `--output` no se escribe nada; con él se crea exclusivamente un archivo
 nuevo, nunca se sobrescribe el original. El importador impide generar una copia
 si faltan parámetros DVB necesarios, si el mapeo es ambiguo o si una entrada
-admitida no puede convertirse. Las entradas inseguras se rechazan.
+admitida no puede convertirse. `--allow-partial` permite explícitamente omitir
+los canales no convertidos. Las entradas inseguras se rechazan.
 
 No reemplaces la configuración activa con la copia sin antes revisarla, detener
 el servicio, respaldar la configuración y su archivo de clave, y regenerar la

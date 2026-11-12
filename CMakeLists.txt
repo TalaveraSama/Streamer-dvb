@@ -182,6 +182,8 @@ tvstreammersat5_apply_warnings(TVStreammerSAT5)
 tvstreammersat5_apply_warnings(tvstreammersat5_ca_newcamd)
 
 install(TARGETS TVStreammerSAT5 RUNTIME DESTINATION bin)
+install(PROGRAMS scripts/import_config.py scripts/import_astra_channels.py scripts/import_flussonic_channels.py
+        DESTINATION libexec/tvstreammersat5)
 install(FILES web/vendor/mpegts.min.js web/vendor/hls.min.js web/vendor/adminlte-3.2.0.min.css web/vendor/LICENSE.adminlte
         DESTINATION web/vendor)
 install(TARGETS tvstreammersat5_ca_newcamd LIBRARY DESTINATION /opt/tvstreammersat5/ca-plugins)

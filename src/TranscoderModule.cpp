@@ -1,4 +1,5 @@
 #include "TranscoderModule.h"
+#include "GstCompat.h"
 #include "TranscodeVideoGeometry.h"
 #include "utils.h"
 
@@ -413,7 +414,7 @@ void configureAudioBitrate(GstElement* encoder, const std::string& factory, uint
 bool linkElementToMux(GstElement* source, GstElement* mux) {
     if (!source || !mux) return false;
     GstPad* srcPad = gst_element_get_static_pad(source, "src");
-    GstPad* sinkPad = gst_element_request_pad_simple(mux, "sink_%d");
+    GstPad* sinkPad = tvsRequestPad(mux, "sink_%d");
     if (!srcPad || !sinkPad) {
         if (srcPad) gst_object_unref(srcPad);
         if (sinkPad) {
