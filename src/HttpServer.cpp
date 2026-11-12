@@ -3603,7 +3603,7 @@ std::string HttpServer::renderIndexPage() {
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TVStreammerSAT5</title>
+<title>TVListerSat</title>
 <script>window.__TVS_VERSION="__TVS_PROGRAM_VERSION__";</script>
 <style>
 html{font-size:14px}
@@ -4776,7 +4776,7 @@ input[type="radio"] {
 <div class="header-left">
 <div class="header-title-block">
 <div class="title">Control Panel</div>
-<div class="server-name" id="headerServerName">TVStreammerSAT5</div>
+<div class="server-name" id="headerServerName">TVListerSat</div>
 </div>
 <div class="header-monitor">
 <div class="header-monitor-group">
@@ -4810,7 +4810,7 @@ input[type="radio"] {
 </div>
 </header>
 <div class="container">
-<div class="dashboard-heading"><h1 data-i18n="streams">Streams</h1><span>TVStreammerSAT5</span></div>
+<div class="dashboard-heading"><h1 data-i18n="streams">Streams</h1><span>TVListerSat</span></div>
 <div id="tiles" class="tile-grid"></div>
 <div id="modal" class="modal">
 <div class="modal-content" id="modalContent"></div>
@@ -4823,7 +4823,7 @@ const translations = {
     subtitle:'Broadcast monitoring and stream control', total:'Total:', active:'Active:', network:'Network', system:'System', user:'User', addStream:'+ Add stream', addChannel:'+ Add channel',
     interfacesNotFound:'No interfaces found', output:'Output', activeInput:'Active input', primary:'Primary', backup:'Backup', sid:'SID', bitrateIn:'Bitrate In', bitrateOut:'Bitrate Out', status:'Status',
     online:'Online', backupOnline:'Backup', offline:'Offline', start:'Start', stop:'Stop', edit:'Edit', chart:'Chart', delete:'Delete stream', removeConfirm:'Delete stream',
-    restartProgram:'Full program restart', restartConfirm:'Fully restart TVStreammerSAT5 service now?', restarting:'Restarting service...',
+    restartProgram:'Full program restart', restartConfirm:'Fully restart TVListerSat service now?', restarting:'Restarting service...',
     networkLoad:'Network interface load', interface:'Interface', incoming:'Incoming', outgoing:'Outgoing', close:'Close',
     about:'About', product:'Product', version:'Version', name:'Name', country:'Country', contactEmail:'Contact email', donate:'Donate', donateQr:'Donate QR code', donateWallet:'Telegram Wallet', cancel:'Cancel', save:'Save', userTitle:'User', telegram:'Telegram API', quality:'Stream quality', playlist:'VLC playlist', subscribers:'Subscribers', streams:'Streams', filtering:'Enable IP filtering', addSubscriber:'Add subscriber', primaryIp:'Primary IP', backupIp:'Backup IP', addedAt:'Added at', subscriberName:'Subscriber name', noSubscribers:'No subscribers added', noStreams:'No streams configured', enabled:'Enabled', disabled:'Disabled', exportSubscribers:'Export TXT', session:'Session', activeSession:'Online', offlineSession:'Offline', resetSession:'Reset'
   },
@@ -4831,7 +4831,7 @@ const translations = {
     subtitle:'Мониторинг трансляций и управление потоками', total:'Всего:', active:'Активно:', network:'Сеть', system:'Система', user:'Пользователь', addStream:'+ Добавить поток', addChannel:'+ Добавить канал',
     interfacesNotFound:'Интерфейсы не найдены', output:'Вывод', activeInput:'Активный вход', primary:'Основной', backup:'Резерв', sid:'SID', bitrateIn:'Bitrate In', bitrateOut:'Bitrate Out', status:'Статус',
     online:'Онлайн', backupOnline:'Резерв', offline:'Офлайн', start:'Старт', stop:'Стоп', edit:'Ред.', chart:'График', delete:'Удалить поток', removeConfirm:'Удалить поток',
-    restartProgram:'Полный перезапуск программы', restartConfirm:'Полностью перезапустить TVStreammerSAT5 через systemd?', restarting:'Перезапуск программы...',
+    restartProgram:'Полный перезапуск программы', restartConfirm:'Полностью перезапустить TVListerSat через systemd?', restarting:'Перезапуск программы...',
     networkLoad:'Загрузка сетевых интерфейсов', interface:'Интерфейс', incoming:'Входящий', outgoing:'Исходящий', close:'Закрыть',
     about:'О программе', product:'Программа', version:'Версия', name:'Имя', country:'Страна', contactEmail:'Эл. почта', donate:'Донат', donateQr:'QR-код доната', donateWallet:'Telegram-кошелёк', cancel:'Отмена', save:'Сохранить', userTitle:'Пользователь', telegram:'Telegram API', quality:'Качество потока', playlist:'Плейлист VLC', subscribers:'Абоненты', streams:'Потоки', filtering:'Включить фильтрацию по IP', addSubscriber:'Добавить абонента', primaryIp:'Основной IP', backupIp:'Резервный IP', addedAt:'Дата добавления', subscriberName:'Наименование абонента', noSubscribers:'Абоненты не добавлены', noStreams:'Потоки не настроены', enabled:'Включен', disabled:'Отключен', exportSubscribers:'Экспорт TXT', session:'Сессия', activeSession:'Онлайн', offlineSession:'Офлайн', resetSession:'Сбросить'
   }
@@ -4872,7 +4872,7 @@ translations.es = {
   subtitle:'Supervisión de transmisiones y control de flujos', total:'Total:', active:'Activos:', network:'Red', system:'Sistema', user:'Usuario', addStream:'+ Agregar flujo', addChannel:'+ Agregar canal',
   interfacesNotFound:'No se encontraron interfaces', output:'Salida', activeInput:'Entrada activa', primary:'Principal', backup:'Respaldo', sid:'SID', bitrateIn:'Bitrate de entrada', bitrateOut:'Bitrate de salida', status:'Estado',
   online:'En línea', backupOnline:'Respaldo', offline:'Desconectado', start:'Iniciar', stop:'Detener', edit:'Editar', chart:'Gráfica', delete:'Eliminar flujo', removeConfirm:'Eliminar flujo',
-  restartProgram:'Reiniciar el programa', restartConfirm:'¿Reiniciar el servicio TVStreammerSAT5?', restarting:'Reiniciando el servicio...',
+  restartProgram:'Reiniciar el programa', restartConfirm:'¿Reiniciar el servicio TVListerSat?', restarting:'Reiniciando el servicio...',
   networkLoad:'Carga de interfaces de red', interface:'Interfaz', incoming:'Entrante', outgoing:'Saliente', close:'Cerrar',
   about:'Acerca de', product:'Producto', version:'Versión', name:'Nombre', country:'País', contactEmail:'Correo de contacto', donate:'Donar', donateQr:'Código QR para donar', donateWallet:'Cartera de Telegram', cancel:'Cancelar', save:'Guardar', userTitle:'Usuario', telegram:'API de Telegram', quality:'Calidad del flujo', playlist:'Lista de VLC', subscribers:'Suscriptores', streams:'Flujos', filtering:'Activar filtro de IP', addSubscriber:'Agregar suscriptor', primaryIp:'IP principal', backupIp:'IP de respaldo', addedAt:'Fecha de alta', subscriberName:'Nombre del suscriptor', noSubscribers:'No hay suscriptores', noStreams:'No hay flujos configurados', enabled:'Habilitado', disabled:'Deshabilitado', exportSubscribers:'Exportar TXT', session:'Sesión', activeSession:'En línea', offlineSession:'Desconectado', resetSession:'Restablecer',
   connectionMonitoring:'Conexiones no registradas', monitoringHint:'Se muestran las sesiones HTTP, HLS y SRT. No es posible detectar receptores UDP.', clientIp:'IP del cliente', protocol:'Protocolo', connections:'Conexiones', actions:'Acciones', addFromConnection:'Agregar', blockClient:'Bloquear', blockedIps:'IP bloqueadas', unblockClient:'Desbloquear', noUnknownConnections:'No hay conexiones no registradas', streamNumber:'Flujo'
@@ -5984,11 +5984,17 @@ function updateStreamTile(tile, stream) {
     toggleButton.onclick = null;
   }
 }
+// Rename the legacy default for display only; preserve configured custom names.
+function displayServerName(name) {
+  const value = String(name || '');
+  return !value.trim() || /^(tvstreammersat5|tvstreamersat5|tvstreamersat)$/i.test(value.trim())
+    ? 'TVListerSat' : value;
+}
 function updateLiveTiles() {
   const headerServerName = document.getElementById('headerServerName');
   const totalCount = document.getElementById('totalCount');
   const activeCount = document.getElementById('activeCount');
-  if (headerServerName) headerServerName.textContent = state.server_name || 'TVStreammerSAT5';
+  if (headerServerName) headerServerName.textContent = displayServerName(state.server_name);
   if (totalCount) totalCount.textContent = state.stream_count ?? (state.streams || []).length;
   if (activeCount) activeCount.textContent = state.active_count ?? (state.streams || []).filter(stream => stream.active).length;
   const tiles = document.getElementById('tiles');
@@ -6712,9 +6718,8 @@ function openAboutModal() {
   openModal(`
     <h2>${t('about')}</h2>
     <div class="about-list">
-      <div class="about-row"><strong>${t('product')}</strong><span>TVStreammerSAT5</span></div>
+      <div class="about-row"><strong>${t('product')}</strong><span>TVListerSat</span></div>
       <div class="about-row"><strong>${t('version')}</strong><span>${escapeHtmlValue(state.program_version||window.__TVS_VERSION||'?')}${language === 'en' ? ' EN' : ''}</span></div>
-      <div class="about-row"><strong>${t('name')}</strong><span>TVListerSat</span></div>
     </div>
     <div class="modal-actions">
       <button class="button-primary" onclick="closeModal()">${t('close')}</button>
@@ -6727,7 +6732,7 @@ function openLoginModal() {
     <div class="form-grid full">
       <div class="form-row"><label>Login</label><input id="login" value="${escapeHtmlValue(state.login||'')}" /></div>
       <div class="form-row"><label>Новый пароль</label><input id="password" type="password" placeholder="Оставьте пустым, чтобы не менять" /></div>
-      <div class="form-row"><label>Имя сервера</label><input id="serverName" value="${escapeHtmlValue(state.server_name||'')}" /></div>
+      <div class="form-row"><label>Имя сервера</label><input id="serverName" value="${escapeHtmlValue(displayServerName(state.server_name))}" data-initial-name="${escapeHtmlValue(displayServerName(state.server_name))}" /></div>
       <div class="form-row"><label>Порт web-интерфейса</label><input id="httpPort" type="number" min="1" max="65535" value="${state.http_port||9000}" /></div>
       <div class="form-row full"><label>SRT для VPS/VDS</label><div class="checkbox-inline"><input id="srtVpsVdsOptimization" type="checkbox" ${state.srt_vps_vds_optimization ? 'checked' : ''} /><span>Оптимизация SRT для VPS/VDS/контейнеров</span></div><small>203.67: включает для всех SRT-входов и выходов latency 1500 ms, rcvlatency/peerlatency 1500 ms, SRT RX/TX buffers 16 MiB, FC 32768 пакетов и poll-timeout 2000 ms. Использовать на VPS/VDS с виртуальной сетью; на обычном LAN/физическом сервере оставлять выключенным.</small></div>
     </div>
@@ -7771,7 +7776,11 @@ function saveSettings() {
   const previousHttpPort = Number(state.http_port || window.location.port || 9000);
   const payload = {
     login: document.getElementById('login')?.value || state.login,
-    server_name: document.getElementById('serverName')?.value || state.server_name,
+    server_name: (() => {
+      const input = document.getElementById('serverName');
+      return input && input.value && input.value !== input.dataset.initialName
+        ? input.value : state.server_name;
+    })(),
     telegram_token: document.getElementById('telegramToken')?.value || state.telegram_token,
     telegram_chat_id: document.getElementById('telegramChatId')?.value || state.telegram_chat_id,
     http_port: httpPort,
@@ -8233,7 +8242,7 @@ function drawQualityChart(data) {
   ctx.fillStyle = '#cfd8ea';
   ctx.font = '700 13px Arial';
   ctx.textAlign = 'center';
-  let titleText = `${state.server_name || 'TVStreammerSAT5'}: ${streamName} — ${qualityOutputLabel(output, selectedIndex)}`;
+  let titleText = `${displayServerName(state.server_name)}: ${streamName} — ${qualityOutputLabel(output, selectedIndex)}`;
   while (ctx.measureText(titleText).width > plotW && titleText.length > 24) {
     titleText = titleText.slice(0, -4) + '...';
   }

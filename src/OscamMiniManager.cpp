@@ -919,7 +919,7 @@ pre{background:#172737;color:#d5e3eb;border-radius:4px}input[type=checkbox]{acce
 </style>
 </head>
 <body><div class="w">
-<div class="row"><a class="btn alt" href="/">← TVStreammerSAT5</a><h2 style="margin:0">OSCam-mini</h2><span id="state" role="status"></span><span class="grow"></span><label class="language-label">Language <select id="locale" aria-label="Language / Idioma"><option value="en">English</option><option value="es">Español</option></select></label></div>
+<div class="row"><a class="btn alt" href="/">← TVListerSat</a><h2 style="margin:0">OSCam-mini</h2><span id="state" role="status"></span><span class="grow"></span><label class="language-label">Language <select id="locale" aria-label="Language / Idioma"><option value="en">English</option><option value="es">Español</option></select></label></div>
 <div class="c"><div class="row"><button onclick="act('start')">Start</button><button class="alt" onclick="act('restart')">Restart</button><button class="alt" onclick="act('stop')">Stop</button><button class="alt" onclick="loadAll()">Refresh</button></div><p>Configuration: /opt/TVStreammerSAT5/oscam-mini/config</p></div>
 
 <div class="c">
