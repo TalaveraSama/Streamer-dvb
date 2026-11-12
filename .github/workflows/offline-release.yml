@@ -1,0 +1,93 @@
+name: Paquetes offline de prueba
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    name: Ubuntu ${{ matrix.version }} x86_64
+    runs-on: ubuntu-24.04
+    container: ubuntu:${{ matrix.version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['20.04', '22.04', '24.04']
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      TVS_BUILD_JOBS: '2'
+    steps:
+      - name: Herramientas iniciales
+        run: apt-get update && apt-get install -y ca-certificates git curl zip unzip
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Dependencias de compilación
+        run: ./install_deps.sh
+      - name: Compilar y probar
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          (cd build && ctest --output-on-failure)
+          node tests/run-all.js --quiet
+      - name: Preparar y verificar ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          pkg="TVStreammerSAT5-203.78-rc2-ubuntu-${{ matrix.version }}-x86_64"
+          mkdir -p "$pkg"/{oscam-mini,web/vendor,tools,packaging/oscam-mini,packaging/systemd}
+          cp build/TVStreammerSAT5 build/tvstreammersat5-ca-newcamd.so "$pkg/"
+          cp build/oscam-mini/oscam-mini "$pkg/oscam-mini/"
+          cp web/vendor/{mpegts.min.js,hls.min.js,adminlte-3.2.0.min.css,LICENSE.adminlte} "$pkg/web/vendor/"
+          cp scripts/{import_config.py,import_astra_channels.py,import_flussonic_channels.py} "$pkg/tools/"
+          cp scripts/install_offline.sh "$pkg/"
+          cp packaging/systemd/tvstreammersat5.service "$pkg/packaging/systemd/"
+          cp packaging/oscam-mini/oscam-mini.service "$pkg/packaging/oscam-mini/"
+          cp -a packaging/oscam-mini/default-config "$pkg/packaging/oscam-mini/"
+          cp docs/PAQUETE_OFFLINE.md "$pkg/LEEME.md"
+          cp NOTICE.md SECURITY.md "$pkg/"
+          cp third_party/oscam-mini/COPYING "$pkg/LICENCIA-OSCAM.txt"
+          echo 'ubuntu ${{ matrix.version }} x86_64' > "$pkg/PLATFORM"
+          echo "commit: $GITHUB_SHA" > "$pkg/BUILD_INFO"
+          bash "$pkg/install_offline.sh" --check
+          zip -qr "$pkg.zip" "$pkg"
+          unzip -tq "$pkg.zip"
+          mkdir verified
+          unzip -q "$pkg.zip" -d verified
+          bash "verified/$pkg/install_offline.sh" --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: offline-${{ matrix.version }}
+          path: TVStreammerSAT5-203.78-rc2-ubuntu-*.zip
+          if-no-files-found: error
+          retention-days: 5
+  publish:
+    name: Publicar prerelease
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: offline-*
+          path: release
+          merge-multiple: true
+      - name: Crear release con sumas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release
+          test "$(find . -maxdepth 1 -name '*.zip' | wc -l)" -eq 3
+          sha256sum ./*.zip | sed 's|  ./|  |' > SHA256SUMS
+          cat > RELEASE_NOTES.md <<'NOTES'
+          Candidata de pruebas, no es la versión estable. Panel de aspecto claro inspirado en Astra, correcciones de guardado parcial y de seguridad en varias vistas.
+
+          Tres ZIP separados para Ubuntu 20.04 (experimental), 22.04 y 24.04 x86_64. Incluyen binarios, plugin CA, OSCam-mini y recursos web. **No incluyen dependencias del sistema ni paquetes .deb**: se necesita tenerlas instaladas previamente. Una instalación desde cero totalmente sin Internet no está garantizada. Consulte `LEEME.md` dentro del ZIP, compruebe SHA256SUMS y ejecute primero `bash install_offline.sh --check`.
+
+          El instalador no descarga ni instala paquetes, no inicia servicios y exige detener TVStreammerSAT5 y OSCam-mini antes de reemplazar binarios. Haga respaldos y programe una ventana de mantenimiento: se interrumpen canales y puede interrumpirse la decodificación. Conserva configuración y unidades existentes, y crea una copia privada de respaldo. No modifica Astra ni Flussonic. Compruebe plugins GStreamer, PC/SC, DVB y configuración reales antes de uso en producción.
+          NOTES
+          gh release create v203.78-rc2 ./*.zip SHA256SUMS --target "$GITHUB_SHA" --title 'TVStreammerSAT5 203.78-rc2 — paquetes offline de prueba' --notes-file RELEASE_NOTES.md --prerelease
