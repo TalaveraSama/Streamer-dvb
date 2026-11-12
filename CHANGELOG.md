@@ -7,6 +7,8 @@ Las versiones siguen el esquema del proyecto original (`203.xx`).
 
 - Compatibilidad de compilación para la API de solicitud de pads de GStreamer
   1.16 y 1.20+. Ubuntu 20.04 sigue siendo experimental hasta validar CI y ejecución.
+- Con glibc anterior a 2.33, las métricas de malloc no están disponibles y
+  aparecen en cero; las demás métricas de memoria siguen funcionando.
 
 - Un solo comando detecta archivos `config.txt` de Astra o Flussonic y prepara
   una copia de revisión; permite aceptar expresamente una conversión parcial.

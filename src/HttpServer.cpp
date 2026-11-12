@@ -1618,7 +1618,10 @@ std::string HttpServer::listInterfaces() {
     uint64_t mallocInUseBytes = 0;
     uint64_t mallocFreeBytes = 0;
     uint64_t mallocMmapBytes = 0;
+// mallinfo2 was introduced in glibc 2.33. On older glibc leave the
+    // allocator metrics at zero rather than using mallinfo's overflowing ints.
 #if defined(__GLIBC__)
+#if __GLIBC_PREREQ(2, 33)
     {
       const struct mallinfo2 info = mallinfo2();
       mallocArenaBytes = static_cast<uint64_t>(info.arena);
@@ -1626,6 +1629,7 @@ std::string HttpServer::listInterfaces() {
       mallocFreeBytes = static_cast<uint64_t>(info.fordblks);
       mallocMmapBytes = static_cast<uint64_t>(info.hblkhd);
     }
+#endif
 #endif
 
     uint64_t qualitySampleCount = 0;
@@ -1745,10 +1749,12 @@ std::string HttpServer::listInterfaces() {
       trimEnabled = trimEnv && *trimEnv && std::strcmp(trimEnv, "0") != 0;
       if (trimEnabled) {
         trimResult = malloc_trim(0);
+#if __GLIBC_PREREQ(2, 33)
         const struct mallinfo2 postTrimInfo = mallinfo2();
         postTrimMallocArenaBytes = static_cast<uint64_t>(postTrimInfo.arena);
         postTrimMallocInUseBytes = static_cast<uint64_t>(postTrimInfo.uordblks);
         postTrimMallocFreeBytes = static_cast<uint64_t>(postTrimInfo.fordblks);
+#endif
         std::ifstream postTrimStatus("/proc/self/status");
         std::string postTrimLine;
         while (std::getline(postTrimStatus, postTrimLine)) {
