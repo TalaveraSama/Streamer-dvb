@@ -1,10 +1,14 @@
 name: Paquetes offline de prueba
 on:
   workflow_dispatch:
+  push:
+    branches: ['arena/439c3008-streamer-dvb']
+    paths: ['.github/workflows/offline-release.yml']
 permissions:
   contents: read
 jobs:
   package:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[publish-offline-rc2]')
     name: Ubuntu ${{ matrix.version }} x86_64
     runs-on: ubuntu-24.04
     container: ubuntu:${{ matrix.version }}
