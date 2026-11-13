@@ -983,7 +983,12 @@ bool configureSource(GstElement* source, const DvbSatelliteParams& params, std::
         "lnb-slof", params.lnbSlofKHz,
         "pids", (params.pids.empty() ? "8192" : params.pids.c_str()),
         "stats-reporting-interval", 20U,
-        "tuning-timeout", static_cast<guint64>(5000000),
+        // tuning-timeout > 0 makes dvbsrc wait for a DTV_TUNE lock event. On
+        // this TBS/m88rs6060 driver that path fails and dvbsrc reports a bogus
+        // "state change failed" (frontend/demux are fine, validated with
+        // gst-launch). The panel already waits for lock with its own timeout,
+        // so keep the element internal wait disabled.
+        "tuning-timeout", static_cast<guint64>(0),
         nullptr);
 
     gint configuredAdapter = -1;
