@@ -1,4 +1,5 @@
 #include "StreamManager.h"
+#include "GstCompat.h"
 #include "TsMediaProgress.h"
 #include "TranscoderModule.h"
 #include "StableUdpOutput.h"

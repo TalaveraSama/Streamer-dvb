@@ -1,4 +1,5 @@
 #include "TranscoderModule.h"
+#include "GstCompat.h"
 #include "TranscodeVideoGeometry.h"
 #include "utils.h"
 
