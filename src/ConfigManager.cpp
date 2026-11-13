@@ -613,10 +613,8 @@ AppConfig AppConfig::fromJson(const Json::Value& root) {
     }
     config.requireStreamAuth = root.get("require_stream_auth", false).asBool();
     config.maxRequestBodyMb = clampRequestBodyMb(root.get("max_request_body_mb", 64).asInt());
-    config.language = root.get("language", "en").asString();
-    if (config.language != "ru" && config.language != "en") {
-        config.language = "en";
-    }
+    config.language = root.get("language", "es").asString();
+    if (config.language != "ru" && config.language != "en" && config.language != "es") { config.language = "es"; }
     config.telegramToken = root.get("telegram_token", "").asString();
     config.telegramChatId = root.get("telegram_chat_id", "").asString();
     config.srtVpsVdsOptimization = root.get("srt_vps_vds_optimization", false).asBool();

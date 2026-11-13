@@ -3589,7 +3589,7 @@ std::string HttpServer::renderIndexPage() {
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TVStreammerSAT5</title>
+<title>TVListerSat</title>
 <script>window.__TVS_VERSION="__TVS_PROGRAM_VERSION__";</script>
 <style>
 html{font-size:14px}
@@ -3849,12 +3849,12 @@ header{position:fixed;top:0;left:0;right:0;z-index:100000;overflow:visible;displ
 @media(max-width:650px) { .tvp-overlay{padding:4px}.tvp-dialog{padding:10px}.tvp-video{max-height:48vh} }
 
 </style>
-</head>
+<style id="astra-skin">:root { --main-bg-color: hsl(220, 10%, 20%); --border-color: hsl(220, 10%, 30%); --main-menu-background-color: hsl(220, 10%, 25%); --backdrop-color: #000; --text-color: hsl(0, 0%, 80%); --link-color: hsl(200, 60%, 50%); --hover-bg-color: hsl(220, 10%, 30%); --inactive-color: hsl(220, 10%, 60%); --info-color: hsl(200, 60%, 30%); --info-bg-color: hsl(200, 60%, 90%); --error-color: hsl(0, 60%, 30%); --error-bg-color: hsl(0, 60%, 90%); --warning-color: hsl(40, 60%, 60%); --warning-bg-color: hsl(40, 60%, 90%); --ok-color: #66bb6a; --err-color: #ef5350; --warn-color: #ffca28; --select-color: #42a5f5; --border-radius: .2em; --font: "Helvetica Neue", Helvetica, Arial, sans-serif; } html { font-size: 14px; } body { font-family: var(--font); background-color: var(--main-bg-color); color: var(--text-color); } body:before { display: none !important; } a { color: var(--link-color); text-decoration: none; } a:hover, a:focus { text-decoration: underline; } h1, h2, h3, h4, h5, h6 { color: var(--text-color); font-weight: 600; } hr { border: 0; border-bottom: 1px solid var(--border-color); margin: 20px 0; } :focus-visible { outline: 1px solid var(--link-color); outline-offset: 1px; } ::selection { background: var(--link-color); color: #fff; } header { background: var(--main-menu-background-color); backdrop-filter: none; -webkit-backdrop-filter: none; border-bottom: 1px solid var(--border-color); box-shadow: none; } .header-left .title { color: var(--text-color); font-weight: 600; letter-spacing: .02em; } .header-title-block .server-name { color: var(--inactive-color); font-weight: 600; } .header-monitor .metric, .header-monitor .status { background: transparent; border: 1px solid var(--border-color); border-radius: var(--border-radius); color: var(--inactive-color); } .header-monitor strong { color: var(--text-color); } .header-monitor .metric span, .header-monitor .status span { color: var(--text-color); font-weight: 700; } .system-menu summary:after { border-top-color: var(--inactive-color); } .system-menu[open] summary { background: var(--hover-bg-color); border-color: var(--border-color); } .system-menu-list { background: var(--main-bg-color); border: 1px solid var(--border-color); border-radius: var(--border-radius); box-shadow: 0 4px 14px rgba(0, 0, 0, .45); } .system-menu-item { border-radius: var(--border-radius); color: var(--text-color); } .system-menu-item:hover { background: var(--hover-bg-color); } .system-menu-item.restart-button { color: var(--warn-color); } .system-menu-item.restart-button:hover { background: var(--hover-bg-color); } .button-primary, .button-secondary, .button-danger, .tile .controls button { border-radius: var(--border-radius); text-transform: uppercase; font-weight: 600; letter-spacing: .03em; box-shadow: none; transition: background-color .15s ease, border-color .15s ease, color .15s ease; } .button-primary { background: var(--link-color); border: 1px solid var(--link-color); color: #fff; } .button-primary:hover { background: hsl(200, 60%, 42%); border-color: hsl(200, 60%, 42%); } .button-primary.save-clean { background: transparent; border: 1px solid var(--border-color); color: var(--inactive-color); box-shadow: none; } .button-primary.save-clean:hover { background: var(--hover-bg-color); border-color: var(--border-color); } .button-primary.save-dirty { background: var(--warn-color); border: 1px solid var(--warn-color); color: #2b2b2b; box-shadow: none; } .button-primary.save-dirty:hover { background: #ffd75e; border-color: #ffd75e; } .button-secondary { background: transparent; border: 1px solid var(--border-color); color: var(--text-color); } .button-secondary:hover { background: var(--hover-bg-color); border-color: var(--border-color); } .button-danger { background: transparent; border: 1px solid var(--error-color); color: var(--error-color); } .button-danger:hover { background: var(--hover-bg-color); } .restart-button { background: transparent; border-color: var(--border-color); color: var(--warn-color); } .restart-button:hover { background: var(--hover-bg-color); border-color: var(--border-color); } .tile { background: transparent; border: 1px solid var(--border-color); border-radius: var(--border-radius); box-shadow: none; transition: border-color .15s ease; } .tile:hover { background: transparent; border-color: var(--select-color); transform: none; } .tile:before { width: 3px; border-radius: 0; background: var(--border-color); } .tile.active { border-color: var(--ok-color); } .tile.active:before { background: var(--ok-color); } .tile.error { border-color: var(--err-color); } .tile.error:before { background: var(--err-color); } .tile:hover:before { background: var(--select-color); } .tile .title { color: var(--text-color); } .tile .badge { display: inline-block; align-self: flex-start; background: var(--hover-bg-color); border-radius: var(--border-radius); color: var(--text-color); border: 1px solid var(--border-color); } .tile .dvb-meter { background: var(--hover-bg-color); border-radius: 0; box-shadow: inset 0 0 0 1px var(--border-color); } .tile .dvb-meter-fill { border-radius: 0; } .tile .dvb-meter-label { font-size: 8px; } .tile .status-pill, .tile .decode-pill { border-radius: var(--border-radius); } .tile .status-pill { background: var(--hover-bg-color); color: var(--inactive-color); } .tile .status-pill.active { background: rgba(102, 187, 106, .18); color: #a5d6a7; } .tile .status-pill.stopped { background: rgba(239, 83, 80, .18); color: #ef9a9a; } .tile .decode-pill.clear { background: rgba(102, 187, 106, .18); color: #a5d6a7; box-shadow: inset 0 0 0 1px rgba(102, 187, 106, .35); } .tile .decode-pill.scrambled { background: rgba(239, 83, 80, .18); color: #ef9a9a; box-shadow: inset 0 0 0 1px rgba(239, 83, 80, .35); } .tile .decode-pill.waiting { background: rgba(255, 202, 40, .16); color: #ffe082; box-shadow: inset 0 0 0 1px rgba(255, 202, 40, .3); } .tile .decode-pill.offline { background: var(--hover-bg-color); color: var(--inactive-color); box-shadow: inset 0 0 0 1px var(--border-color); } .tile .runtime-status, .tile .info { color: var(--inactive-color); } .tile .info-row strong { color: var(--text-color); } .tile .controls { gap: 5px; } .tile .controls button { background: transparent; border: 1px solid var(--border-color); color: var(--text-color); font-size: 9px; padding: 5px 6px; } .tile .controls button:hover { background: var(--hover-bg-color); } .tile .controls .start-button { background: transparent; border-color: rgba(102, 187, 106, .45); color: #a5d6a7; box-shadow: none; } .tile .controls .start-button:hover { background: rgba(102, 187, 106, .16); } .tile .controls .stop-button { background: transparent; border-color: rgba(239, 83, 80, .45); color: #ef9a9a; box-shadow: none; } .tile .controls .stop-button:hover { background: rgba(239, 83, 80, .16); } .tile .controls .copy-button.copied { background: rgba(102, 187, 106, .25); border-color: var(--ok-color); color: #fff; box-shadow: none; } .tile .controls .copy-button.copy-error { background: rgba(255, 202, 40, .2); border-color: var(--warn-color); color: #ffe082; box-shadow: none; } .tile .controls .quality-button { background: transparent; border-color: rgba(66, 165, 245, .4); color: #90caf9; box-shadow: none; } .tile .controls .quality-button:hover { background: rgba(66, 165, 245, .16); } .tile .delete-button { background: transparent; border: 1px solid rgba(239, 83, 80, .5); border-radius: var(--border-radius); color: #ef9a9a; box-shadow: none; font-size: 13px; } .tile .delete-button:hover { background: rgba(239, 83, 80, .16); transform: none; } .modal { background: rgba(0, 0, 0, .55); } .modal-content { background: var(--main-bg-color); border: 1px solid var(--border-color); border-radius: var(--border-radius); box-shadow: 0 6px 26px rgba(0, 0, 0, .55); } .modal-content h2 { color: var(--text-color); font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; } .modal-close { background: transparent; border: 1px solid var(--border-color); border-radius: var(--border-radius); color: var(--inactive-color); box-shadow: none; font-size: 13px; } .modal-close:hover { background: var(--hover-bg-color); color: var(--text-color); transform: none; } .modal-actions button { text-transform: uppercase; font-weight: 600; letter-spacing: .03em; } .form-row label, .sat-field label { color: var(--inactive-color); text-transform: uppercase; letter-spacing: .05em; font-size: .7rem; font-weight: 600; } .form-row input, .form-row select, .sat-field input, .sat-field select, .subscriber-row input, .backup-library-button, .cam-controls input[type="number"], .cam-controls select { background: var(--main-bg-color); border: 1px solid var(--border-color); border-radius: var(--border-radius); color: var(--text-color); font-family: var(--font); } .form-row input:focus, .form-row select:focus, .sat-field input:focus, .sat-field select:focus, .subscriber-row input:focus { border-color: var(--link-color); outline: none; } .form-row input::placeholder, .subscriber-row input::placeholder { color: var(--inactive-color); } input[type="checkbox"], input[type="radio"] { accent-color: var(--link-color); } .network-table { color: var(--text-color); } .network-table th, .network-table td { border-bottom: 1px solid var(--border-color); } .network-table th { color: var(--inactive-color); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: .72rem; } .network-table tbody tr:hover { background: var(--hover-bg-color); } .output-row, .mpts-row, .cam-panel, .sat-signal-panel, .sat-services, .quality-board, .quality-card, .quality-decode, .mpts-service-picker, .subscriber-stream-options, .backup-library-menu, .quality-output-chart-head, .period-tabs button { border-radius: var(--border-radius); border-color: var(--border-color); box-shadow: none; } .output-row, .mpts-row, .cam-panel, .sat-signal-panel, .sat-services, .quality-board, .quality-card, .quality-decode, .mpts-service-picker { background: transparent; } .sat-bar { border-radius: 0; background: var(--hover-bg-color); } .sat-service-head { background: var(--main-menu-background-color); color: var(--inactive-color); text-transform: uppercase; letter-spacing: .04em; font-size: .68rem; } .sat-service-row { border-top: 1px solid var(--border-color); } .sat-service-row:hover { background: var(--hover-bg-color); } .sat-service-head, .sat-service-row { border-radius: 0; } .sat-lock { border-radius: var(--border-radius); background: rgba(239, 83, 80, .15); color: #ef9a9a; } .sat-lock.locked { background: rgba(102, 187, 106, .16); color: #a5d6a7; } .sat-access { border-radius: var(--border-radius); } .quality-board { background: transparent; } .quality-stats .head, .quality-legend .legend-head { color: var(--inactive-color); text-transform: uppercase; letter-spacing: .04em; font-size: .68rem; } .quality-dot { border-radius: 0; width: 8px; height: 8px; } .quality-line { border-radius: 0; } .about-row { border-bottom: 1px solid var(--border-color); } .about-row strong { color: var(--inactive-color); } .about-row span, .about-row a { color: var(--text-color); } .about-row a:hover { color: var(--link-color); } .about-qr { background: #fff; border-radius: var(--border-radius); } .backup-library-menu { box-shadow: 0 4px 14px rgba(0, 0, 0, .45); } .backup-library-item, .backup-library-delete { border-radius: var(--border-radius); } .backup-library-delete { background: transparent; border: 1px solid rgba(239, 83, 80, .4); color: #ef9a9a; } .backup-library-delete:hover { background: rgba(239, 83, 80, .2); } .backup-library-select:hover { background: var(--hover-bg-color); } .cam-state, .mpts-state { border-radius: var(--border-radius); } .cam-head strong { color: var(--text-color); } .cam-panel { border-color: var(--border-color); background: transparent; } .ui-toast { border-radius: var(--border-radius); background: var(--main-menu-background-color); border: 1px solid rgba(239, 83, 80, .5); color: #ef9a9a; box-shadow: 0 4px 14px rgba(0, 0, 0, .4); } .ui-toast.ok { border-color: rgba(102, 187, 106, .5); color: #a5d6a7; } .ui-toast-close { background: transparent; border: 1px solid var(--border-color); border-radius: var(--border-radius); color: var(--inactive-color); box-shadow: none; } .ui-toast-close:hover { background: var(--hover-bg-color); transform: none; } .period-tabs button { background: transparent; border: 1px solid var(--border-color); color: var(--text-color); } .period-tabs button.active { background: var(--link-color); border-color: var(--link-color); color: #fff; } .quality-refresh select, .quality-output-select select { background: var(--main-bg-color); border: 1px solid var(--border-color); border-radius: var(--border-radius); color: var(--text-color); } .mpts-advanced { border: 1px solid var(--border-color); border-radius: var(--border-radius); } .mpts-advanced summary { color: var(--inactive-color); } .mpts-empty { border: 1px dashed var(--border-color); border-radius: var(--border-radius); color: var(--inactive-color); } .quality-empty, .network-empty, .sat-empty { color: var(--inactive-color); } ::-webkit-scrollbar { width: 10px; height: 10px; } ::-webkit-scrollbar-track { background: var(--main-bg-color); } ::-webkit-scrollbar-thumb { background: var(--border-color); } ::-webkit-scrollbar-thumb:hover { background: hsl(220, 10%, 40%); } .tile .dvb-meter-fill{background:linear-gradient(90deg,#f44336,#ffca28 45%,#66bb6a 78%,#66bb6a) !important} .tile{height:auto;min-height:0;padding:10px 12px;gap:6px} .tile.ok{border-color:#66bb6a} .tile.ok:before{background:#66bb6a} .tile.warn{border-color:#ffca28} .tile.warn:before{background:#ffca28} .tile.down{border-color:#ef5350;opacity:.78} .tile.down:before{background:#ef5350} .tile.down .title{color:#9aa3b1} .tile.pending{border-color:#42a5f5} .tile.pending:before{background:#42a5f5} .tile .tile-head{min-width:0;flex:1 1 auto} .tile .title{font-size:13px} .tile .bitrate-main{display:flex;align-items:baseline;gap:8px;margin:2px 0 4px;min-width:0} .tile .bitrate-main b{font-size:20px;font-weight:700;color:#fff;letter-spacing:.02em;white-space:nowrap} .tile .bitrate-main small{flex:1 1 auto;color:#9aa3b1;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .tile .status-pill{padding:2px 6px;border-radius:.2em;font-weight:700;font-size:9px;text-transform:uppercase} .tile .status-pill.ok{background:rgba(102,187,106,.18);color:#a5d6a7} .tile .status-pill.warn{background:rgba(255,202,40,.18);color:#ffe082} .tile .status-pill.down{background:rgba(239,83,80,.18);color:#ef9a9a} .tile .status-pill.pending{background:rgba(66,165,245,.18);color:#90caf9} .tile .info-row strong{white-space:nowrap}</style></head>
 <body>
 <header>
 <div class="header-left">
 <div class="header-title-block">
-<div class="title">Control Panel</div>
+<div class="title">TVListerSat</div>
 <div class="server-name" id="headerServerName">TVStreammerSAT5</div>
 </div>
 <div class="header-monitor">
@@ -3905,6 +3905,14 @@ const translations = {
     networkLoad:'Network interface load', interface:'Interface', incoming:'Incoming', outgoing:'Outgoing', close:'Close',
     about:'About', product:'Product', version:'Version', name:'Name', country:'Country', contactEmail:'Contact email', donate:'Donate', donateQr:'Donate QR code', donateWallet:'Telegram Wallet', cancel:'Cancel', save:'Save', userTitle:'User', telegram:'Telegram API', quality:'Stream quality', playlist:'VLC playlist', subscribers:'Subscribers', streams:'Streams', filtering:'Enable IP filtering', addSubscriber:'Add subscriber', primaryIp:'Primary IP', backupIp:'Backup IP', addedAt:'Added at', subscriberName:'Subscriber name', noSubscribers:'No subscribers added', noStreams:'No streams configured', enabled:'Enabled', disabled:'Disabled', exportSubscribers:'Export TXT', session:'Session', activeSession:'Online', offlineSession:'Offline', resetSession:'Reset'
   },
+  es: {
+    subtitle:'Monitoreo de emisiones y control de flujos', total:'Total:', active:'Activos:', network:'Red', system:'Sistema', user:'Usuario', addStream:'+ Añadir flujo', addChannel:'+ Añadir canal',
+    interfacesNotFound:'No se encontraron interfaces', output:'Salida', activeInput:'Entrada activa', primary:'Principal', backup:'Respaldo', sid:'SID', bitrateIn:'Bitrate entrada', bitrateOut:'Bitrate salida', status:'Estado',
+    online:'En línea', backupOnline:'Respaldo', offline:'Detenido', start:'Iniciar', stop:'Detener', edit:'Editar', chart:'Gráfico', delete:'Eliminar flujo', removeConfirm:'Eliminar flujo',
+    restartProgram:'Reinicio completo del programa', restartConfirm:'¿Reiniciar ahora el servicio TVStreammerSAT5 mediante systemd?', restarting:'Reiniciando programa...',
+    networkLoad:'Carga de interfaces de red', interface:'Interfaz', incoming:'Entrada', outgoing:'Salida', close:'Cerrar',
+    about:'Acerca de', product:'Producto', version:'Versión', name:'Nombre', country:'País', contactEmail:'Correo de contacto', donate:'Donar', donateQr:'Código QR de donación', donateWallet:'Monedero de Telegram', cancel:'Cancelar', save:'Guardar', userTitle:'Usuario', telegram:'API de Telegram', quality:'Calidad del flujo', playlist:'Lista VLC', subscribers:'Suscriptores', streams:'Flujos', filtering:'Activar filtrado por IP', addSubscriber:'Añadir suscriptor', primaryIp:'IP principal', backupIp:'IP de respaldo', addedAt:'Fecha de alta', subscriberName:'Nombre del suscriptor', noSubscribers:'No hay suscriptores', noStreams:'No hay flujos configurados', enabled:'Activado', disabled:'Desactivado', exportSubscribers:'Exportar TXT', session:'Sesión', activeSession:'En línea', offlineSession:'Desconectado', resetSession:'Restablecer'
+  },
   ru: {
     subtitle:'Мониторинг трансляций и управление потоками', total:'Всего:', active:'Активно:', network:'Сеть', system:'Система', user:'Пользователь', addStream:'+ Добавить поток', addChannel:'+ Добавить канал',
     interfacesNotFound:'Интерфейсы не найдены', output:'Вывод', activeInput:'Активный вход', primary:'Основной', backup:'Резерв', sid:'SID', bitrateIn:'Bitrate In', bitrateOut:'Bitrate Out', status:'Статус',
@@ -3928,6 +3936,20 @@ Object.assign(translations.en, {
   noUnknownConnections:'No unregistered connections',
   streamNumber:'Stream'
 });
+Object.assign(translations.es, {
+  connectionMonitoring:'Conexiones no registradas',
+  monitoringHint:'Se ven las sesiones HTTP, HLS y SRT. Los receptores UDP no se pueden detectar.',
+  clientIp:'IP del cliente',
+  protocol:'Protocolo',
+  connections:'Conexiones',
+  actions:'Acciones',
+  addFromConnection:'Añadir',
+  blockClient:'Bloquear',
+  blockedIps:'IP bloqueadas',
+  unblockClient:'Desbloquear',
+  noUnknownConnections:'No hay conexiones no registradas',
+  streamNumber:'Flujo'
+});
 Object.assign(translations.ru, {
   connectionMonitoring:'\u041d\u0435\u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0435 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f',
   monitoringHint:'\u0412\u0438\u0434\u043d\u044b \u0441\u0435\u0441\u0441\u0438\u0438 HTTP, HLS \u0438 SRT. \u041f\u043e\u043b\u0443\u0447\u0430\u0442\u0435\u043b\u0435\u0439 UDP \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u043d\u0435\u043b\u044c\u0437\u044f.',
@@ -3943,9 +3965,9 @@ Object.assign(translations.ru, {
   streamNumber:'\u041f\u043e\u0442\u043e\u043a'
 });
 function normalizeLanguage(value) {
-  return value === 'ru' ? 'ru' : 'en';
+  return value === 'en' ? 'en' : 'es';
 }
-let language = normalizeLanguage(localStorage.getItem('tvstreammersat5-language') || 'en');
+let language = normalizeLanguage(localStorage.getItem('tvlistersat-language') || 'es');
 
 // 203.73 EN: runtime localization for UI fragments that are generated dynamically.
 // The numeric program version remains 203.73. English mode only appends " EN"
@@ -4229,17 +4251,494 @@ const uiOriginalText = new WeakMap();
 const uiOriginalAttrs = new WeakMap();
 const uiLocalizedAttributes = ['title', 'placeholder', 'aria-label'];
 
+const uiRuToEs = new Map([
+  ["Мониторинг трансляций и управление потоками", "Monitoreo de transmisiones y gestión de flujos"],
+  ["Всего:", "Total:"],
+  ["Активно:", "Activo:"],
+  ["Сеть", "Red"],
+  ["Система", "Sistema"],
+  ["Пользователь", "Usuario"],
+  ["+ Добавить поток", "+ Añadir flujo"],
+  ["+ Добавить канал", "+ Añadir canal"],
+  ["Интерфейсы не найдены", "No se encontraron interfaces"],
+  ["Вывод", "Salida"],
+  ["Активный вход", "Entrada activa"],
+  ["Основной", "Principal"],
+  ["Резерв", "Respaldo"],
+  ["Статус", "Estado"],
+  ["Онлайн", "En línea"],
+  ["Офлайн", "Sin conexión"],
+  ["Старт", "Iniciar"],
+  ["Стоп", "Detener"],
+  ["Ред.", "Ed."],
+  ["График", "Gráfico"],
+  ["Удалить поток", "Eliminar flujo"],
+  ["Полный перезапуск программы", "Reinicio completo del programa"],
+  ["Полностью перезапустить TVStreammerSAT5 через systemd?", "¿Reiniciar completamente TVStreammerSAT5 mediante systemd?"],
+  ["Перезапуск программы...", "Reiniciando el programa..."],
+  ["Загрузка сетевых интерфейсов", "Carga de las interfaces de red"],
+  ["Интерфейс", "Interfaz"],
+  ["Входящий", "Entrante"],
+  ["Исходящий", "Saliente"],
+  ["Закрыть", "Cerrar"],
+  ["О программе", "Acerca del programa"],
+  ["Программа", "Programa"],
+  ["Версия", "Versión"],
+  ["Имя", "Nombre"],
+  ["Страна", "País"],
+  ["Эл. почта", "Correo electrónico"],
+  ["Донат", "Donación"],
+  ["QR-код доната", "Código QR de donación"],
+  ["Telegram-кошелёк", "Monedero de Telegram"],
+  ["Отмена", "Cancelar"],
+  ["Сохранить", "Guardar"],
+  ["Качество потока", "Calidad del flujo"],
+  ["Плейлист VLC", "Lista de reproducción VLC"],
+  ["Абоненты", "Abonados"],
+  ["Потоки", "Flujos"],
+  ["Включить фильтрацию по IP", "Activar filtrado por IP"],
+  ["Добавить абонента", "Añadir abonado"],
+  ["Основной IP", "IP principal"],
+  ["Резервный IP", "IP de respaldo"],
+  ["Дата добавления", "Fecha de alta"],
+  ["Наименование абонента", "Nombre del abonado"],
+  ["Абоненты не добавлены", "No hay abonados añadidos"],
+  ["Потоки не настроены", "No hay flujos configurados"],
+  ["Включен", "Activado"],
+  ["Отключен", "Desactivado"],
+  ["Экспорт TXT", "Exportar TXT"],
+  ["Сессия", "Sesión"],
+  ["Сбросить", "Restablecer"],
+  ["Тест", "Prueba"],
+  ["Файл замены", "Archivo de reemplazo"],
+  ["Временный HTTP MPEG-TS", "HTTP MPEG-TS temporal"],
+  ["Не требуется", "No requerido"],
+  ["Passthrough (без декодирования)", "Passthrough (sin decodificación)"],
+  ["Качество в норме", "Calidad normal"],
+  ["Поток остановлен", "Flujo detenido"],
+  ["Нет входного битрейта при активном потоке", "Sin bitrate de entrada con el flujo activo"],
+  ["Выходной битрейт отклоняется от цели больше чем на 20%", "El bitrate de salida se desvía del objetivo en más del 20%"],
+  ["ДЕКОД: ОК", "DECOD: OK"],
+  ["ДЕКОД: НЕТ", "DECOD: NO"],
+  ["ДЕКОД: OFF", "DECOD: OFF"],
+  ["ДЕКОД: …", "DECOD: …"],
+  ["ОЖИДАНИЕ A/V ПАКЕТОВ", "ESPERANDO PAQUETES A/V"],
+  ["Канал остановлен", "Canal detenido"],
+  ["Декодирование", "Decodificación"],
+  ["Контроль по A/V PID, scrambling_control и валидному PES", "Control por A/V PID, scrambling_control y PES válido"],
+  ["Контроль по A/V PID, scrambling_control и валидному PES на выходе.", "Control por A/V PID, scrambling_control y PES válido en la salida."],
+  ["Двойной клик — предпросмотр", "Doble clic — vista previa"],
+  ["Работает", "En marcha"],
+  ["Остановлен", "Detenido"],
+  ["Удалить", "Eliminar"],
+  ["Поток не активен: ", "Flujo no activo: "],
+  ["Ошибка GStreamer: ", "Error de GStreamer: "],
+  ["CC-errors MPEG-TS: вход=", "CC-errors MPEG-TS: entrada="],
+  [", выход=", ", salida="],
+  ["CC-errors MPEG-TS за интервал: вход=", "CC-errors MPEG-TS por intervalo: entrada="],
+  ["MPTS-выходы ещё не созданы", "Aún no se han creado salidas MPTS"],
+  ["Отдельный пакетный мультиплексор объединяет выбранные выходные SPTS в один MPEG-TS. PCR/PTS/DTS медиапакетов не переписываются; исходные PAT/PMT/SDT заменяются общей таблицей MPTS, null-пакеты отдельных каналов отбрасываются.", "Un multiplexor de paquetes independiente combina las salidas SPTS seleccionadas en un único MPEG-TS. Los PCR/PTS/DTS de los paquetes multimedia no se reescriben; los PAT/PMT/SDT originales se sustituyen por una tabla MPTS común y los paquetes null de los canales individuales se descartan."],
+  ["MPTS-выходы", "Salidas MPTS"],
+  ["+ Добавить MPTS", "+ Añadir MPTS"],
+  ["готов", "listo"],
+  ["ожидание PSI", "esperando PSI"],
+  ["SID MPTS, 0 = автоматически", "SID MPTS, 0 = automático"],
+  ["Сначала создайте каналы", "Cree primero los canales"],
+  ["Редактирование MPTS", "Editar MPTS"],
+  ["Новый MPTS", "Nuevo MPTS"],
+  ["IP назначения", "IP de destino"],
+  ["Порт", "Puerto"],
+  ["Интерфейс выхода", "Interfaz de salida"],
+  ["Автозапуск MPTS", "Inicio automático de MPTS"],
+  ["Каналы MPTS", "Canales MPTS"],
+  ["SID = 0 означает автоматическую нумерацию от базового SID. Порядок сервисов соответствует порядку каналов в конфигурации.", "SID = 0 significa numeración automática desde el SID base. El orden de los servicios corresponde al orden de los canales en la configuración."],
+  ["Расширенные параметры PSI", "Parámetros PSI avanzados"],
+  ["Базовый SID", "SID base"],
+  ["Базовый PMT PID", "PMT PID base"],
+  ["Назад", "Atrás"],
+  ["Выберите хотя бы один канал для MPTS", "Seleccione al menos un canal para MPTS"],
+  ["Укажите корректный IP и порт MPTS", "Indique una IP y un puerto MPTS válidos"],
+  ["Не удалось сохранить MPTS", "No se pudo guardar MPTS"],
+  ["Не удалось удалить MPTS", "No se pudo eliminar MPTS"],
+  ["Удалить MPTS «${output.name || output.id}»?", "¿Eliminar MPTS «${output.name || output.id}»?"],
+  ["Лукомский Виталий", "Vitali Lukomski"],
+  ["Беларусь, г. Борисов", "Bielorrusia, ciudad de Borisov"],
+  ["Новый пароль", "Nueva contraseña"],
+  ["Оставьте пустым, чтобы не менять", "Déjelo en blanco para no cambiarla"],
+  ["Имя сервера", "Nombre del servidor"],
+  ["Порт web-интерфейса", "Puerto de la interfaz web"],
+  ["SRT для VPS/VDS", "SRT para VPS/VDS"],
+  ["Оптимизация SRT для VPS/VDS/контейнеров", "Optimización de SRT para VPS/VDS/contenedores"],
+  ["203.67: включает для всех SRT-входов и выходов latency 1500 ms, rcvlatency/peerlatency 1500 ms, SRT RX/TX buffers 16 MiB, FC 32768 пакетов и poll-timeout 2000 ms. Использовать на VPS/VDS с виртуальной сетью; на обычном LAN/физическом сервере оставлять выключенным.", "203.67: activa para todas las entradas y salidas SRT latency 1500 ms, rcvlatency/peerlatency 1500 ms, buffers SRT RX/TX de 16 MiB, FC 32768 paquetes y poll-timeout 2000 ms. Usar en VPS/VDS con red virtual; en una LAN normal o servidor físico dejarlo desactivado."],
+  ["свободен", "libre"],
+  [" · свободен", " · libre"],
+  [" · занято ", " · ocupado "],
+  ["Параметры тюнера изменены. Выполните сканирование заново.", "Los parámetros del sintonizador han cambiado. Vuelva a realizar el escaneo."],
+  ["Ошибка чтения DVB frontend", "Error de lectura del frontend DVB"],
+  ["GStreamer dvbsrc не найден. Установите gstreamer1.0-plugins-bad.", "No se encontró GStreamer dvbsrc. Instale gstreamer1.0-plugins-bad."],
+  ["DVB frontend не обнаружен в /dev/dvb.", "No se detectó ningún frontend DVB en /dev/dvb."],
+  ["Не удалось получить список DVB frontend", "No se pudo obtener la lista de frontends DVB"],
+  ["Каналы не найдены. Проверьте частоту, Symbol Rate, поляризацию и уровень сигнала.", "No se encontraron canales. Compruebe la frecuencia, el Symbol Rate, la polarización y el nivel de señal."],
+  ["Канал", "Canal"],
+  ["Провайдер", "Proveedor"],
+  ["Доступ", "Acceso"],
+  ["Кодированный канал (CA)", "Canal codificado (CA)"],
+  ["PMT/PID ещё не получены", "PMT/PID aún no recibidos"],
+  ["Открытый канал (FTA)", "Canal abierto (FTA)"],
+  ["КОД.", "COD."],
+  ["ПРОВ.", "VERIF."],
+  ["Ошибка сканирования DVB-S/S2", "Error de escaneo DVB-S/S2"],
+  ["Выберите хотя бы один канал.", "Seleccione al menos un canal."],
+  ["Не удалось сохранить спутниковые каналы", "No se pudieron guardar los canales satelitales"],
+  ["Добавить канал — DVB-S/S2", "Añadir canal — DVB-S/S2"],
+  ["Сигнал", "Señal"],
+  ["Качество", "Calidad"],
+  ["Частота, MHz", "Frecuencia, MHz"],
+  ["Поляризация", "Polarización"],
+  ["Стандарт", "Estándar"],
+  ["Модуляция", "Modulación"],
+  ["Сканирование", "Escaneo"],
+  ["Удерживать LOCK", "Mantener LOCK"],
+  ["Поиск DVB frontend...", "Buscando frontend DVB..."],
+  ["Сканировать каналы", "Escanear canales"],
+  ["Найдено:", "Encontrados:"],
+  ["Нажмите «Сканировать каналы».", "Pulse «Escanear canales»."],
+  ["Выход", "Salida"],
+  ["Первый UDP порт", "Primer puerto UDP"],
+  ["CBR bitrate, кбит/с", "Bitrate CBR, kbps"],
+  ["Выходной интерфейс", "Interfaz de salida"],
+  ["Авто (системный маршрут)", "Auto (ruta del sistema)"],
+  ["Автозапуск", "Inicio automático"],
+  ["Запускать созданные каналы после перезапуска", "Iniciar los canales creados tras el reinicio"],
+  ["Сохранить выбранные", "Guardar seleccionados"],
+  ["Выбран /dev/dvb/adapter${adapter}/frontend${frontend}", "Seleccionado /dev/dvb/adapter${adapter}/frontend${frontend}"],
+  ["Выбран /dev/dvb/adapter${preferredAdapter}/frontend${preferredFrontend} · доступно: ${dvbAdapters.map(item=>item.device).join(', ')}", "Seleccionado /dev/dvb/adapter${preferredAdapter}/frontend${preferredFrontend} · disponible: ${dvbAdapters.map(item=>item.device).join(', ')}"],
+  [" · доступно: ", " · disponible: "],
+  [" · удержание LOCK", " · manteniendo LOCK"],
+  [" не готово", " no listo"],
+  ["Код.:", "Cod.:"],
+  ["сервисов", "servicios"],
+  ["Как основной", "Igual que el principal"],
+  ["Основной формат", "Formato principal"],
+  ["Доп. формат", "Formato adicional"],
+  ["SRT режим", "Modo SRT"],
+  ["Адрес выхода", "Dirección de salida"],
+  ["Основной интерфейс", "Interfaz principal"],
+  ["URL для плеера", "URL del reproductor"],
+  ["Ссылка появится после сохранения", "El enlace aparecerá tras guardar"],
+  ["Загрузка списка...", "Cargando lista..."],
+  ["Загруженных файлов нет", "No hay archivos cargados"],
+  ["Выбрать ранее загруженный файл", "Seleccionar un archivo cargado anteriormente"],
+  ["Не удалось загрузить список файлов", "No se pudo cargar la lista de archivos"],
+  ["Не удалось удалить файл", "No se pudo eliminar el archivo"],
+  ["Выбранный файл удалён", "El archivo seleccionado se ha eliminado"],
+  ["Ошибка удаления файла", "Error al eliminar el archivo"],
+  ["/path/to/replacement.ts или загрузите файл ниже", "/path/to/replacement.ts o suba un archivo abajo"],
+  ["Загрузка...", "Cargando..."],
+  ["Не удалось загрузить файл", "No se pudo cargar el archivo"],
+  ["Ошибка загрузки файла", "Error al cargar el archivo"],
+  ["не установлены необходимые GStreamer-плагины", "no están instalados los plugins de GStreamer necesarios"],
+  ["Редактирование трансляции", "Editar transmisión"],
+  ["Настройка трансляции", "Configuración de la transmisión"],
+  ["Имя плитки", "Nombre del mosaico"],
+  ["Входной URL (Основной)", "URL de entrada (principal)"],
+  ["Интерфейс входа", "Interfaz de entrada"],
+  ["Режим входа", "Modo de entrada"],
+  ["Auto / все интерфейсы", "Auto / todas las interfaces"],
+  ["HTTP / HLS доступ", "Acceso HTTP / HLS"],
+  ["Без ключа", "Sin clave"],
+  ["Authorization или token", "Authorization o token"],
+  ["Bearer TOKEN / значение ключа", "Bearer TOKEN / valor de la clave"],
+  ["Ключ индивидуален для этого канала. Auto: URL *.m3u8 открывается как HLS, остальные HTTP/HTTPS URL — как single-request MPEG-TS. Для HLS без .m3u8 выбери режим HLS вручную. Для HTTP MPEG-TS ключ применяется к единственному запросу; для HLS — к manifest, variant playlist, сегментам и EXT-X-KEY. Если ключ уже находится в URL, оставь «Без ключа». Для Authorization указывай полное значение, например Bearer xxxxx.", "La clave es específica de este canal. Auto: las URL *.m3u8 se abren como HLS y el resto de URL HTTP/HTTPS, como MPEG-TS de petición única. Para HLS sin .m3u8, selecciona el modo HLS manualmente. Para HTTP MPEG-TS la clave se aplica a la única petición; para HLS, al manifest, al variant playlist, a los segmentos y a EXT-X-KEY. Si la clave ya está en la URL, deja «Sin clave». Para Authorization indica el valor completo, por ejemplo Bearer xxxxx."],
+  ["HLS синхронизация", "Sincronización HLS"],
+  ["Provider PCR clock (ручной режим)", "Provider PCR clock (modo manual)"],
+  ["Для каналов вроде TV3: после стабилизации provider PCR становится фиксированным media clock. Транспортный PCR остаётся синтетическим 20 ms.", "Para canales como TV3: tras la estabilización, el provider PCR pasa a ser un media clock fijo. El PCR de transporte sigue siendo sintético de 20 ms."],
+  ["Provider PCR deadline shaper (ручной режим)", "Provider PCR deadline shaper (modo manual)"],
+  ["203.41: для HLS с сильными VBR burst между provider PCR. Шейпер держит ограниченный lookahead 750 ms, заранее видит будущие PCR deadlines и распределяет burst по предыдущим свободным CBR-слотам, не превышая полезный потолок выхода. В output-path нет ожидания PCR, нет feedback PLL и catch-up. Внешний UDP остаётся CBR с synthetic PCR 20 ms и NULL stuffing. Не включать вместе с Provider PCR clock.", "203.41: para HLS con fuertes VBR burst entre provider PCR. El shaper mantiene un lookahead limitado de 750 ms, ve con antelación los futuros PCR deadlines y distribuye el burst entre los slots CBR libres anteriores sin superar el techo útil de salida. En el output-path no hay espera de PCR, ni feedback PLL ni catch-up. El UDP externo sigue siendo CBR con synthetic PCR de 20 ms y NULL stuffing. No activar junto con Provider PCR clock."],
+  ["Резерв / файл замены", "Respaldo / archivo de reemplazo"],
+  ["URL резерва", "URL de respaldo"],
+  ["Зациклить файл замены", "Repetir en bucle el archivo de reemplazo"],
+  ["Повторять до появления основного потока", "Repetir hasta que aparezca el flujo principal"],
+  ["Тестовая таблица", "Tabla de prueba"],
+  ["Использовать вместо входных потоков", "Usar en lugar de los flujos de entrada"],
+  ["Интерфейс вывода", "Interfaz de salida"],
+  ["Выходные форматы", "Formatos de salida"],
+  ["+ Добавить формат", "+ Añadir formato"],
+  ["SID входа", "SID de entrada"],
+  ["0 = автоопределение SID из PAT; значение 1–65535 = выбрать конкретный входной канал.", "0 = autodetección del SID desde PAT; valor 1–65535 = seleccionar un servicio de entrada concreto."],
+  ["SID выхода", "SID de salida"],
+  ["Имя Канала и Провайдер", "Nombre del canal y proveedor"],
+  ["Target bitrate (кбит/с, для CBR)", "Bitrate objetivo (kbps, para CBR)"],
+  ["Транскодирование", "Transcodificación"],
+  ["Обрабатывать видео/аудио: транскодирование или независимый проброс оригинальных потоков", "Procesar vídeo/audio: transcodificación o paso independiente de los flujos originales"],
+  ["HLS архив (DVR)", "Archivo HLS (DVR)"],
+  ["Записывать архив", "Grabar archivo"],
+  ["часов", "horas"],
+  ["Архив сохраняет HLS TS-сегменты на диск. Совместимые URL: /КАНАЛ/archive-UTC-ДЛИТЕЛЬНОСТЬ.m3u8, /КАНАЛ/rewind-СЕКУНДЫ.m3u8, /КАНАЛ/timeshift_rel-СЕКУНДЫ.m3u8, /КАНАЛ/timeshift_abs-UTC.m3u8.", "El archivo guarda los segmentos TS de HLS en disco. URL compatibles: /КАНАЛ/archive-UTC-ДЛИТЕЛЬНОСТЬ.m3u8, /КАНАЛ/rewind-СЕКУНДЫ.m3u8, /КАНАЛ/timeshift_rel-СЕКУНДЫ.m3u8, /КАНАЛ/timeshift_abs-UTC.m3u8."],
+  ["Параметры транскодирования", "Parámetros de transcodificación"],
+  ["Видео: H.264 транскодирование", "Vídeo: transcodificación H.264"],
+  ["Видео: H.265 / HEVC транскодирование", "Vídeo: transcodificación H.265 / HEVC"],
+  ["Видео: H.265 / HEVC транскодирование (недоступно)", "Vídeo: transcodificación H.265 / HEVC (no disponible)"],
+  ["Видео: проброс оригинального потока", "Vídeo: paso del flujo original"],
+  ["Мультибитрейт HLS (ABR)", "Multibitrate HLS (ABR)"],
+  ["203.75: H.264 и H.265/HEVC поддерживают Auto/NVENC/Intel/CPU (x264/x265). При включённом Multibitrate и наличии HLS-выхода создаётся master.m3u8: основной профиль плюс до трёх более низких профилей. Для RTMP/YouTube HEVC не используется.", "203.75: H.264 y H.265/HEVC admiten Auto/NVENC/Intel/CPU (x264/x265). Con Multibitrate activado y una salida HLS disponible se crea master.m3u8: el perfil principal más hasta tres perfiles más bajos. Para RTMP/YouTube no se utiliza HEVC."],
+  ["Кодировщик: Auto (NVENC → Intel → CPU)", "Codificador: Auto (NVENC → Intel → CPU)"],
+  ["Кодировщик: NVIDIA NVENC", "Codificador: NVIDIA NVENC"],
+  ["Кодировщик: Intel Quick Sync / VA", "Codificador: Intel Quick Sync / VA"],
+  ["Кодировщик: CPU x264/x265", "Codificador: CPU x264/x265"],
+  [" (недоступен)", " (no disponible)"],
+  [" (недоступно)", " (no disponible)"],
+  ["1024×576 (SD 16:9, квадратный пиксель)", "1024×576 (SD 16:9, píxel cuadrado)"],
+  ["720×576 (SD 16:9, анаморфный)", "720×576 (SD 16:9, anamórfico)"],
+  ["720×576 (PAL SD, прежний режим)", "720×576 (PAL SD, modo anterior)"],
+  ["кбит/с CBR", "kbps CBR"],
+  ["96 кбит/с", "96 kbps"],
+  ["128 кбит/с", "128 kbps"],
+  ["160 кбит/с", "160 kbps"],
+  ["192 кбит/с", "192 kbps"],
+  ["256 кбит/с", "256 kbps"],
+  ["320 кбит/с", "320 kbps"],
+  ["Аудио: проброс оригинальной дорожки", "Audio: paso de la pista original"],
+  ["Аудио: AAC-LC", "Audio: AAC-LC"],
+  ["Аудио: MP3", "Audio: MP3"],
+  ["аудио", "audio"],
+  ["202.79: H.264 поддерживает NVIDIA NVENC, Intel Quick Sync/VA и CPU x264. Auto: NVENC → Intel → x264. Интерлейс 576i/1080i деинтерлейсится YADIF по всем полям с сохранением 50 Гц движения; SPS/PPS повторяются на каждом IDR.", "202.79: H.264 admite NVIDIA NVENC, Intel Quick Sync/VA y CPU x264. Auto: NVENC → Intel → x264. El entrelazado 576i/1080i se desentrelaza con YADIF en todos los campos manteniendo el movimiento de 50 Hz; SPS/PPS se repiten en cada IDR."],
+  ["Запускать после перезапуска программы", "Iniciar tras el reinicio del programa"],
+  ["Включить CBR", "Activar CBR"],
+  ["CBR поддерживается для UDP, HTTP, HLS и SRT.", "CBR es compatible con UDP, HTTP, HLS y SRT."],
+  ["Включить Remap", "Activar Remap"],
+  ["Для MPEG-TS: SID входа 0 = автоопределение программы из PAT; ненулевой SID выбирает конкретный входной канал. SID выхода всегда задаётся отдельно и используется для Remap в PAT/PMT/SDT. V-PID и A-PID задают выходные PID.", "Para MPEG-TS: SID de entrada 0 = autodetección del programa desde PAT; un SID distinto de cero selecciona un servicio de entrada concreto. El SID de salida siempre se indica aparte y se usa para el Remap en PAT/PMT/SDT. V-PID y A-PID definen los PID de salida."],
+  ["Адрес для ссылки", "Dirección para el enlace"],
+  ["HLS порт", "Puerto HLS"],
+  ["HTTP порт", "Puerto HTTP"],
+  ["IP интерфейса или DNS", "IP de la interfaz o DNS"],
+  ["RTP IP / мультикаст", "RTP IP / multicast"],
+  ["RTP порт", "Puerto RTP"],
+  ["SRT сервер", "Servidor SRT"],
+  ["SRT host для ссылки", "Host SRT para el enlace"],
+  ["SRT порт", "Puerto SRT"],
+  ["server.example.com или IP", "server.example.com o IP"],
+  ["0.0.0.0 для listener", "0.0.0.0 para listener"],
+  ["RTSP сервер", "Servidor RTSP"],
+  ["RTSP порт", "Puerto RTSP"],
+  ["rtsp://server/app/name или IP сервера", "rtsp://server/app/name o IP del servidor"],
+  ["xxxx-xxxx-xxxx-xxxx или rtmp://a.rtmp.youtube.com/live2/...", "xxxx-xxxx-xxxx-xxxx o rtmp://a.rtmp.youtube.com/live2/..."],
+  ["RTMP порт", "Puerto RTMP"],
+  ["rtmp://server/app/key или server.example.com", "rtmp://server/app/key o server.example.com"],
+  ["Мультикаст / UDP IP", "Multicast / UDP IP"],
+  ["UDP порт", "Puerto UDP"],
+  ["CBR MPEG-TS для HTTP/HLS/SRT: NULL stuffing + PAT/PMT/PCR; HTTP/SRT дополнительно синхронизируются по PCR.", "CBR MPEG-TS para HTTP/HLS/SRT: NULL stuffing + PAT/PMT/PCR; HTTP/SRT se sincronizan además por PCR."],
+  ["UDP CBR использует StableUdpOutput; UDP VBR следует входному битрейту.", "UDP CBR utiliza StableUdpOutput; UDP VBR sigue el bitrate de entrada."],
+  ["CBR для этого типа выхода не применяется.", "CBR no se aplica a este tipo de salida."],
+  ["Выход ${index + 1}: ${type}${endpoint ? ` ${endpoint}` : ''}", "Salida ${index + 1}: ${type}${endpoint ? ` ${endpoint}` : ''}"],
+  ["Месяц", "Mes"],
+  ["Неделя", "Semana"],
+  ["День", "Día"],
+  ["Пол дня", "Medio día"],
+  ["5 часов", "5 horas"],
+  ["1 час", "1 hora"],
+  ["30 минут", "30 minutos"],
+  ["10 минут", "10 minutos"],
+  ["Минута", "1 minuto"],
+  ["Выкл", "Desactivado"],
+  ["2 сек", "2 s"],
+  ["5 сек", "5 s"],
+  ["10 сек", "10 s"],
+  ["30 сек", "30 s"],
+  ["Исходящий поток", "Flujo de salida"],
+  ["Автообновление", "Actualización automática"],
+  ["Расшифровка", "Leyenda"],
+  ["Зеленый — входной bitrate по левой шкале Mbit/s.", "Verde — bitrate de entrada en la escala izquierda Mbit/s."],
+  ["Синий — bitrate выбранного исходящего потока по левой шкале Mbit/s.", "Azul — bitrate del flujo de salida seleccionado en la escala izquierda Mbit/s."],
+  ["Оранжевые столбцы — количество входных CC-errors за интервал истории по правой шкале.", "Barras naranjas — número de CC-errors de entrada por intervalo de historial en la escala derecha."],
+  ["Розовые столбцы — CC-errors общего выходного MPEG-TS до разветвления за интервал истории.", "Barras rosas — CC-errors del MPEG-TS de salida común antes de la bifurcación por intervalo de historial."],
+  ["CC-errors считаются по накопительным счетчикам между соседними точками истории; ошибки внутри 30-секундного интервала больше не теряются.", "Los CC-errors se calculan mediante contadores acumulativos entre puntos de historial adyacentes; ya no se pierden los errores dentro del intervalo de 30 segundos."],
+  ["Клик по графику копирует картинку графика.", "Al hacer clic en el gráfico se copia su imagen."],
+  ["Основной выход", "Salida principal"],
+  ["Дополнительный выход", "Salida adicional"],
+  ["Поток", "Flujo"],
+  ["Поток ", "Flujo "],
+  ["История пока пустая. Данные появятся после нескольких обновлений состояния.", "El historial aún está vacío. Los datos aparecerán tras varias actualizaciones de estado."],
+  ["Нет данных", "Sin datos"],
+  ["История собирается в памяти во время работы приложения.", "El historial se recopila en memoria mientras la aplicación está en ejecución."],
+  ["посл", "últ"],
+  ["мин", "mín"],
+  ["сред", "med"],
+  ["макс", "máx"],
+  ["За выбранный период входных и выходных CC-errors и других ошибок нет", "No hay CC-errors de entrada ni de salida ni otros errores en el periodo seleccionado"],
+  ["Браузер не разрешил копировать картинку графика", "El navegador no permitió copiar la imagen del gráfico"],
+  ["Браузер не поддерживает копирование картинки графика", "El navegador no admite copiar la imagen del gráfico"],
+  ["Картинка графика скопирована в буфер обмена", "Imagen del gráfico copiada al portapapeles"],
+  ["Не удалось скопировать картинку графика", "No se pudo copiar la imagen del gráfico"],
+  ["Ответ preview API должен содержать массив sources", "La respuesta de la API de vista previa debe contener un array sources"],
+  ["Некорректный адрес HTTP-предпросмотра", "Dirección de vista previa HTTP no válida"],
+  ["Адрес предпросмотра должен быть HTTP(S)", "La dirección de vista previa debe ser HTTP(S)"],
+  ["Предпросмотр должен выдаваться веб-сервером TVStreammer (same-origin)", "La vista previa debe ser servida por el servidor web de TVStreammer (same-origin)"],
+  ["Браузер не поддерживает безопасный токен HTTP-предпросмотра", "El navegador no admite un token seguro de vista previa HTTP"],
+  ["install() запускается только в браузере", "install() solo se ejecuta en el navegador"],
+  ["Для HLS необходима поддержка браузера или локальная hls.js.", "Para HLS se necesita compatibilidad del navegador o un hls.js local."],
+  ["Нажмите ▶ для запуска видео.", "Pulse ▶ para iniciar el vídeo."],
+  ["Поток остановлен: временный HTTP-предпросмотр недоступен.", "Flujo detenido: la vista previa HTTP temporal no está disponible."],
+  ["Временный HTTP-предпросмотр недоступен для этого канала.", "La vista previa HTTP temporal no está disponible para este canal."],
+  ["Для HTTP MPEG-TS необходимы локальная mpegts.js и поддержка MediaSource.", "HTTP MPEG-TS requiere un mpegts.js local y compatibilidad con MediaSource."],
+  ["Проверьте кодеки канала и доступность новых видеокадров.", "Compruebe los códecs del canal y la disponibilidad de nuevos fotogramas de vídeo."],
+  ["Для спутникового MPEG-2/AC3 браузеру может потребоваться H.264/AAC-превью.", "Para MPEG-2/AC3 satelital, el navegador puede necesitar una vista previa H.264/AAC."],
+  ["HTTP-предпросмотр потока", "Vista previa HTTP del flujo"],
+  ["Закрыть предпросмотр", "Cerrar vista previa"],
+  ["HTTP-предпросмотр", "Vista previa HTTP"],
+  ["Подключение к HTTP-потоку…", "Conectando al flujo HTTP…"],
+  ["Ошибка HLS: ", "Error de HLS: "],
+  ["Ошибка HTTP MPEG-TS: ", "Error de HTTP MPEG-TS: "],
+  ["Не удалось получить HTTP-предпросмотр: ", "No se pudo obtener la vista previa HTTP: "],
+  ["ОТКРЫТ A/V", "A/V EN CLARO"],
+  ["ЗАКОДИРОВАН A/V", "A/V CODIFICADO"],
+  ["A/V пакеты идут, но валидный открытый PES не найден", "Llegan paquetes A/V, pero no se encontró un PES en claro válido"],
+  ["A/V пакеты идут, но валидный открытый PES не найден (${payload} пак.)", "Llegan paquetes A/V, pero no se encontró un PES en claro válido (${payload} paq.)"],
+  [" пак.", " paq."],
+  ["Доступно:", "Disponible:"],
+  ["Недоступно:", "No disponible:"],
+  ["Кодировщик:", "Codificador:"],
+  ["Видео:", "Vídeo:"],
+  ["Аудио:", "Audio:"],
+  ["кбит/с", "kbps"],
+  [" часов", " horas"],
+  [" или ", " o "],
+  ["входной bitrate", "bitrate de entrada"],
+  ["входные CC-errors за интервал", "CC-errors de entrada por intervalo"],
+  ["выходные CC-errors за интервал (общий TS)", "CC-errors de salida por intervalo (TS común)"],
+  ["нет данных", "sin datos"],
+  ["звук включается в плеере", "el sonido se activa en el reproductor"],
+  ["да", "sí"],
+  ["нет", "no"],
+  ["Выбран файл: ${name}", "Archivo seleccionado: ${name}"],
+  ["Удалить ${file.name}", "Eliminar ${file.name}"],
+  ["Удалить файл «${file.name}»?", "¿Eliminar el archivo «${file.name}»?"],
+  ["Файл загружен: ${result.filename || file.name}", "Archivo cargado: ${result.filename || file.name}"],
+  ["Имя абонента, IP адрес, Статус", "Nombre del abonado, dirección IP, Estado"],
+  ["HD ПОТОКИ", "FLUJOS HD"],
+  ["HD + SD ПОТОКИ", "FLUJOS HD + SD"],
+  ["SD ПОТОКИ", "FLUJOS SD"],
+  ["БЕЗ МЕТКИ HD/SD", "SIN ETIQUETA HD/SD"],
+  ["онлайн", "en línea"],
+  ["офлайн", "sin conexión"],
+  ["Не удалось создать временный файл ", "No se pudo crear el archivo temporal "],
+  ["Ошибка записи ", "Error de escritura "],
+  ["DES key должен содержать ровно 28 HEX-символов", "La DES key debe contener exactamente 28 caracteres HEX"],
+  ["Добавьте хотя бы одного пользователя Newcamd", "Añada al menos un usuario Newcamd"],
+  ["Некорректное имя пользователя: ", "Nombre de usuario no válido: "],
+  ["Некорректный пароль пользователя ", "Contraseña no válida del usuario "],
+  ["Некорректный порт пользователя ", "Puerto no válido del usuario "],
+  ["Порт ", "Puerto "],
+  [" используется более одного раза", " se utiliza más de una vez"],
+  ["Пользователь ", "Usuario "],
+  [" указан более одного раза", " está indicado más de una vez"],
+  ["CAID пользователя ", "CAID del usuario "],
+  [" должен содержать 4 HEX-символа", " debe contener 4 caracteres HEX"],
+  ["Provider пользователя ", "Provider del usuario "],
+  [" должен содержать 6 HEX-символов", " debe contener 6 caracteres HEX"],
+  ["Некорректные группы пользователя ", "Grupos del usuario no válidos "],
+  ["У ридера отсутствует имя", "El lector no tiene nombre"],
+  ["Для PC/SC укажите индекс ридера (0, 1, ...): ", "Para PC/SC indique el índice del lector (0, 1, ...): "],
+  ["Некорректное устройство ридера ", "Dispositivo del lector no válido "],
+  ["CAID ридера ", "CAID del lector "],
+  ["Некорректная группа ридера ", "Grupo del lector no válido "],
+  ["Некорректная частота ридера ", "Frecuencia del lector no válida "],
+  ["Поддерживаются mouse/phoenix/pcsc: ", "Se admiten mouse/phoenix/pcsc: "],
+  ["BoxKey ридера ", "BoxKey del lector "],
+  [" должен содержать 16 HEX-символов", " debe contener 16 caracteres HEX"],
+  ["RSAKey ридера ", "RSAKey del lector "],
+  [" должен содержать HEX-строку чётной длины", " debe contener una cadena HEX de longitud par"],
+  ["AU Provider ридера ", "AU Provider del lector "],
+  ["OSCam-mini остановлен", "OSCam-mini detenido"],
+  ["Newcamd клиент подключён", "Cliente Newcamd conectado"],
+  ["Ожидание подключения", "Esperando conexión"],
+  ["Ридер отключён", "Lector desconectado"],
+  ["Карта готова", "Tarjeta lista"],
+  ["Ошибка ридера", "Error del lector"],
+  ["Инициализация карты", "Inicialización de la tarjeta"],
+  ["Ожидание карты", "Esperando tarjeta"],
+  ["Конфигурация сохранена, но OSCam-mini не перезапущен: ", "Configuración guardada, pero OSCam-mini no se ha reiniciado: "],
+  ["Перезапуск", "Reiniciar"],
+  ["Обновить", "Actualizar"],
+  ["Конфиги: /opt/TVStreammerSAT5/oscam-mini/config", "Configuraciones: /opt/TVStreammerSAT5/oscam-mini/config"],
+  ["Пользователи / порты", "Usuarios / puertos"],
+  ["+ Пользователь", "+ Usuario"],
+  ["Строка пользователя свернута по умолчанию. Нажмите на неё, чтобы открыть настройки.", "La fila de usuario está contraída por defecto. Púlsela para abrir los ajustes."],
+  ["+ Ридер", "+ Lector"],
+  ["Зелёный — карта готова, жёлтый — инициализация/ожидание, красный — неактивен или ошибка.", "Verde — tarjeta lista, amarillo — inicialización/espera, rojo — inactivo o error."],
+  ["Сохранить и перезапустить", "Guardar y reiniciar"],
+  ["Процесс / журнал", "Proceso / registro"],
+  ["неактивен", "inactivo"],
+  ["Пароль", "Contraseña"],
+  ["Группы", "Grupos"],
+  ["Удалить пользователя", "Eliminar usuario"],
+  ["устройство не выбрано", "dispositivo no seleccionado"],
+  ["Устройство / индекс PC/SC", "Dispositivo / índice PC/SC"],
+  ["/dev/ttyUSB0 или 0", "/dev/ttyUSB0 o 0"],
+  ["Протокол", "Protocolo"],
+  ["Удалить ридер", "Eliminar lector"],
+  ["● работает", "● en marcha"],
+  ["остановлен", "detenido"],
+  ["процесс не запущен", "proceso no iniciado"],
+  ["Сохранение…", "Guardando…"],
+  ["Сохранено и перезапущено", "Guardado y reiniciado"],
+  ["Ошибка", "Error"],
+  ["Поток запущен", "Flujo iniciado"],
+  ["Транскодинг -> стандартный UDP", "Transcodificación -> UDP estándar"],
+  ["GStreamer-транскодер", "Transcodificador GStreamer"],
+  ["Источник: основной", "Origen: principal"],
+  ["Сервер", "Servidor"],
+  ["Основной поток пропал", "Se ha perdido el flujo principal"],
+  ["Нет медиаданных 5 секунд", "Sin datos multimedia durante 5 segundos"],
+  ["Переключаюсь на резерв", "Cambiando al respaldo"],
+  ["Работаю с резервного источника", "Funcionando desde la fuente de respaldo"],
+  ["Активный источник: резерв", "Fuente activa: respaldo"],
+  ["Основной поток снова доступен", "El flujo principal vuelve a estar disponible"],
+  ["Переключаюсь на основной источник", "Cambiando a la fuente principal"],
+  ["Входные данные поступают; UDP ещё проверяется", "Llegan datos de entrada; UDP aún se está comprobando"],
+  ["Активный источник: основной", "Fuente activa: principal"],
+  ["Входной сигнал восстановлен", "Señal de entrada restablecida"],
+  ["Основной вход восстановлен; UDP-поток не проверен", "Entrada principal restablecida; el flujo UDP no se ha verificado"],
+  ["Основной поток восстановлен", "Flujo principal restablecido"],
+  ["Основной источник: новые медиаданные передаются на UDP", "Fuente principal: se están transmitiendo nuevos datos multimedia por UDP"],
+  ["Сетевой вход временно пропал", "La entrada de red se ha perdido temporalmente"],
+  ["Переподключаю активный источник", "Reconectando la fuente activa"],
+  ["Нет входных данных ", "Sin datos de entrada "],
+  [" секунд", " segundos"],
+  ["Не удалось включить резерв", "No se pudo activar el respaldo"],
+  ["Backup pipeline не стартовал", "El pipeline de respaldo no se inició"],
+  ["Переключаюсь с файла подмены на основной источник", "Cambiando del archivo de sustitución a la fuente principal"],
+  ["Основной пока недоступен", "El principal aún no está disponible"],
+  ["Возвращаюсь на резервный источник", "Volviendo a la fuente de respaldo"],
+  ["HLS источник недоступен", "Fuente HLS no disponible"],
+  ["проверяю источник каждые 30 секунд без перезапуска канала", "compruebo la fuente cada 30 segundos sin reiniciar el canal"],
+  ["HLS поток временно пропал", "El flujo HLS se ha perdido temporalmente"],
+  ["Нет HLS данных 15 секунд, переподключаю источник", "Sin datos HLS durante 15 segundos, reconectando la fuente"],
+  ["DVB сигнал есть, но нет данных сервиса", "Hay señal DVB, pero no hay datos del servicio"],
+  ["Frontend имеет LOCK, но выбранный сервис не передает данные", "El frontend tiene LOCK, pero el servicio seleccionado no transmite datos"],
+  ["Нет входного сигнала", "Sin señal de entrada"],
+  ["Входных данных нет ", "No hay datos de entrada "],
+  ["Резервная ссылка не задана", "El enlace de respaldo no está configurado"],
+  ["Ошибка потока", "Error del flujo"],
+  ["Причина", "Causa"],
+  ["Ошибка повтора файла подмены", "Error al repetir el archivo de sustitución"],
+  ["Не удалось запустить файл подмены с начала", "No se pudo reiniciar el archivo de sustitución desde el principio"],
+  ["Поток завершился", "El flujo ha finalizado"],
+  ["GStreamer получил EOS", "GStreamer recibió EOS"]
+]);
+
 function translateUiText(value) {
   const source = String(value ?? '');
-  if (language !== 'en' || !/[А-Яа-яЁё]/.test(source)) return source;
+  if (!/[А-Яа-яЁё]/.test(source)) return source;
   const match = source.match(/^(\s*)([\s\S]*?)(\s*)$/);
   const lead = match ? match[1] : '';
   const core = match ? match[2] : source;
   const tail = match ? match[3] : '';
-  if (uiRuToEn.has(core)) return lead + uiRuToEn.get(core) + tail;
+  const map = language === 'en' ? uiRuToEn : uiRuToEs;
+  if (map.has(core)) return lead + map.get(core) + tail;
 
   let text = core;
-  const replacements = [
+  const replacements = language === 'en' ? [
     [/^([0-9]+)\/([0-9]+) сервисов$/, '$1/$2 services'],
     [/^Выбран файл: (.+)$/, 'Selected file: $1'],
     [/^Удалить файл «(.+)»\?$/, 'Delete file “$1”?'],
@@ -4258,11 +4757,29 @@ function translateUiText(value) {
     [/^Ошибка GStreamer: (.+)$/, 'GStreamer error: $1'],
     [/^CC-errors MPEG-TS: вход=([0-9]+), выход=([0-9]+)$/, 'MPEG-TS CC errors: input=$1, output=$2'],
     [/^CC-errors MPEG-TS за интервал: вход=([0-9]+), выход=([0-9]+)$/, 'MPEG-TS CC errors for interval: input=$1, output=$2']
+  ] : [
+    [/^([0-9]+)\/([0-9]+) сервисов$/, '$1/$2 servicios'],
+    [/^Выбран файл: (.+)$/, 'Archivo seleccionado: $1'],
+    [/^Удалить файл «(.+)»\?$/, '¿Eliminar archivo «$1»?'],
+    [/^Удалить (.+)$/, 'Eliminar $1'],
+    [/^Файл загружен: (.+)$/, 'Archivo cargado: $1'],
+    [/^Выбран (\/dev\/dvb\/adapter\d+\/frontend\d+)$/, 'Seleccionado $1'],
+    [/^Выбран (\/dev\/dvb\/adapter\d+\/frontend\d+) · доступно: (.+)$/, 'Seleccionado $1 · disponible: $2'],
+    [/^Сканирование (\/dev\/dvb\/adapter\d+\/frontend\d+)( · удержание LOCK)?\.\.\.$/, (_m, dev, lock) => `Escaneando ${dev}${lock ? ' · manteniendo LOCK' : ''}...`],
+    [/^Удалить MPTS «(.+)»\?$/, '¿Eliminar MPTS «$1»?'],
+    [/^Поток ([^\s]+)$/, 'Flujo $1'],
+    [/^Выход ([0-9]+):(.*)$/, 'Salida $1:$2'],
+    [/^Ошибка HLS: (.+)$/, 'Error HLS: $1'],
+    [/^Ошибка HTTP MPEG-TS: (.+)$/, 'Error HTTP MPEG-TS: $1'],
+    [/^Не удалось получить HTTP-предпросмотр: (.+)$/, 'No se pudo obtener la vista previa HTTP: $1'],
+    [/^Поток не активен: (.+)$/, 'El flujo no está activo: $1'],
+    [/^Ошибка GStreamer: (.+)$/, 'Error de GStreamer: $1'],
+    [/^CC-errors MPEG-TS: вход=([0-9]+), выход=([0-9]+)$/, 'Errores CC MPEG-TS: entrada=$1, salida=$2'],
+    [/^CC-errors MPEG-TS за интервал: вход=([0-9]+), выход=([0-9]+)$/, 'Errores CC MPEG-TS del intervalo: entrada=$1, salida=$2']
   ];
   for (const [pattern, replacement] of replacements) text = text.replace(pattern, replacement);
 
-  // Safe technical phrase replacements for dynamic strings.
-  const phrases = [
+  const phrases = language === 'en' ? [
     [' · свободен', ' · free'], [' · занято ', ' · used '], ['Найдено:', 'Found:'], ['Код.:', 'Encrypted:'], [' не готово', ' not ready'],
     ['ОТКРЫТ A/V', 'CLEAR A/V'], ['ЗАКОДИРОВАН A/V', 'SCRAMBLED A/V'],
     ['A/V пакеты идут, но валидный открытый PES не найден', 'A/V packets are present, but no valid clear PES was found'], [' пак.', ' packets'],
@@ -4271,12 +4788,23 @@ function translateUiText(value) {
     ['кбит/с', 'kbps'], [' часов', ' hours'], [' или ', ' or '],
     ['входной bitrate', 'input bitrate'], ['входные CC-errors за интервал', 'input CC errors per interval'],
     ['выходные CC-errors за интервал (общий TS)', 'output CC errors per interval (common TS)'],
-    ['нет данных', 'no data'], ['звук включается в плеере', 'audio can be enabled in the player']
+    ['нет данных', 'no data'], ['звук включается в плеере', 'audio can be enabled in the player'], ['Основной', 'Primary'], ['Резервный', 'Backup'], ['Резерв', 'Backup'], ['Временный', 'Temporary'], ['Файл замены', 'Replacement file'], ['Тест', 'Test']
+  ] : [
+    [' · свободен', ' · libre'], [' · занято ', ' · ocupado '], ['Найдено:', 'Encontrado:'], ['Код.:', 'Cifrado:'], [' не готово', ' no listo'],
+    ['ОТКРЫТ A/V', 'A/V ABIERTO'], ['ЗАКОДИРОВАН A/V', 'A/V CODIFICADO'],
+    ['A/V пакеты идут, но валидный открытый PES не найден', 'Los paquetes A/V llegan, pero no se encontró un PES abierto válido'], [' пак.', ' paq.'],
+    ['Доступно:', 'Disponible:'], ['Недоступно:', 'No disponible:'], [' (недоступен)', ' (no disponible)'],
+    ['Кодировщик:', 'Codificador:'], ['Видео:', 'Vídeo:'], ['Аудио:', 'Audio:'],
+    ['кбит/с', 'kbps'], [' часов', ' horas'], [' или ', ' o '],
+    ['входной bitrate', 'bitrate de entrada'], ['входные CC-errors за интервал', 'errores CC de entrada por intervalo'],
+    ['выходные CC-errors за интервал (общий TS)', 'errores CC de salida por intervalo (TS común)'],
+    ['нет данных', 'sin datos'], ['звук включается в плеере', 'el sonido se activa en el reproductor'], ['Основной', 'Principal'], ['Резервный', 'Respaldo'], ['Резерв', 'Respaldo'], ['Временный', 'Temporal'], ['Файл замены', 'Archivo de reemplazo'], ['Тест', 'Prueba']
   ];
   for (const [from, to] of phrases) text = text.split(from).join(to);
 
-  if (text.startsWith('Available:') || text.startsWith('Unavailable:')) {
-    text = text.replace(/\bда\b/g, 'yes').replace(/\bнет\b/g, 'no');
+  if (language !== 'en' && /[А-Яа-яЁё]/.test(text)) {
+    const en = uiRuToEn.get(core);
+    if (en) return lead + en + tail;
   }
   return lead + text + tail;
 }
@@ -4284,7 +4812,7 @@ function translateUiText(value) {
 function localizeUiTextNode(node) {
   if (!node || node.nodeType !== Node.TEXT_NODE || ['SCRIPT','STYLE'].includes(node.parentElement?.tagName)) return;
   const current = node.nodeValue || '';
-  if (language === 'en') {
+  if (language === 'en' || language === 'es') {
     if (/[А-Яа-яЁё]/.test(current)) uiOriginalText.set(node, current);
     const source = uiOriginalText.get(node) ?? current;
     const translated = translateUiText(source);
@@ -4353,12 +4881,12 @@ function applyLanguage() {
   document.documentElement.lang = language;
   document.querySelectorAll('[data-i18n]').forEach(element => { element.textContent = t(element.dataset.i18n); });
   const button = document.getElementById('languageButton');
-  if (button) button.textContent = language === 'en' ? 'RU' : 'EN';
+  if (button) button.textContent = language === 'en' ? 'ES' : 'EN';
   applyRuntimeLocalization(document.body);
 }
 function toggleLanguage() {
-  language = language === 'en' ? 'ru' : 'en';
-  localStorage.setItem('tvstreammersat5-language', language);
+  language = language === 'en' ? 'es' : 'en';
+  localStorage.setItem('tvlistersat-language', language);
   applyLanguage();
   render(true);
   saveLanguagePreference();
@@ -4520,10 +5048,10 @@ function fetchState() {
         data.active_count = 0;
       }
       allowEmptyStreamStateOnce = false;
-      const storedLanguage = localStorage.getItem('tvstreammersat5-language');
+      const storedLanguage = localStorage.getItem('tvlistersat-language');
       const serverLanguage = normalizeLanguage(data.language);
       language = normalizeLanguage(storedLanguage || language);
-      localStorage.setItem('tvstreammersat5-language', language);
+      localStorage.setItem('tvlistersat-language', language);
       data.language = language;
       const cachedInterfaces = Array.isArray(state.interfaces) ? state.interfaces : [];
       const cachedInputInterfaces = Array.isArray(state.input_interfaces) ? state.input_interfaces : [];
@@ -4733,21 +5261,108 @@ function caDecodeInfo(stream) {
   return {cls:'waiting', text:'ДЕКОД: …', detail:'ОЖИДАНИЕ A/V ПАКЕТОВ'};
 }
 
+const streamBitrateHistory = new Map();
+const streamCcWatch = new Map();
+const streamHealthState = new Map();
+function formatBitrate(kbps) {
+  const n = Math.round(Number(kbps || 0));
+  if (!n) return '—';
+  if (n >= 1000) return (n / 1000).toFixed(1) + ' Mbps';
+  return n + ' kbps';
+}
+function bitrateStats(stream) {
+  const now = Date.now();
+  const id = String(stream.id);
+  let hist = streamBitrateHistory.get(id);
+  if (!hist) { hist = []; streamBitrateHistory.set(id, hist); }
+  hist.push({ t: now, in: Number(stream.bitrate_in_kbps || 0), out: Number(stream.bitrate_out_kbps || 0) });
+  while (hist.length > 1200) hist.shift();
+  while (hist.length && now - hist[0].t > 300000) hist.shift();
+  const recent = hist.filter(h => now - h.t <= 30000);
+  const win = recent.length ? recent : hist.slice(-1);
+  const avg = (arr, key) => arr.reduce((a, h) => a + h[key], 0) / Math.max(1, arr.length);
+  const avgIn = avg(win, 'in');
+  const avgOut = avg(win, 'out');
+  const medianAvg = (key) => {
+    const averages = [];
+    for (let i = 0; i < hist.length; i++) {
+      const t0 = hist[i].t - 30000;
+      let sum = 0, n = 0;
+      for (let j = i; j >= 0 && hist[j].t >= t0; j--) { sum += hist[j][key]; n++; }
+      if (n >= 4) averages.push(sum / n);
+    }
+    if (!averages.length) return 0;
+    averages.sort((a, b) => a - b);
+    return averages[Math.floor(averages.length / 2)];
+  };
+  const baseIn = medianAvg('in');
+  const baseOut = medianAvg('out');
+  const lastSignal = hist.filter(h => (h.in > 0 || h.out > 0)).slice(-1)[0];
+  const signalAge = lastSignal ? now - lastSignal.t : Infinity;
+  const ccTotal = Number(stream.cc_errors_total || 0) + Number(stream.input_cc_errors_total || 0) + Number(stream.output_cc_errors_total || 0);
+  let ccInfo = streamCcWatch.get(id) || { total: 0, lastIncrease: 0 };
+  if (ccTotal > ccInfo.total) ccInfo.lastIncrease = now;
+  ccInfo.total = ccTotal;
+  streamCcWatch.set(id, ccInfo);
+  const ccAge = ccInfo.lastIncrease ? now - ccInfo.lastIncrease : Infinity;
+  return { avgIn, avgOut, baseIn, baseOut, signalAge, ccAge, ccTotal, hasSignal: !!lastSignal, samples: hist.length };
+}
+function translateStatus(value) {
+  const s = String(value || '').trim();
+  const map = { stopped:'Detenido', starting:'Iniciando', stopping:'Deteniendo', online:'En línea', running:'En ejecución', error:'Error', failed:'Fallo', waiting:'Esperando', reconnecting:'Reconectando', idle:'Inactivo', paused:'En pausa' };
+  return map[s.toLowerCase()] || s;
+}
+function resolveHealth(candidate, stream) {
+  const id = String(stream.id);
+  let state = streamHealthState.get(id);
+  if (!state) { streamHealthState.set(id, { cls: candidate, count: 0 }); return candidate; }
+  if (candidate === state.cls) { state.count = 0; return state.cls; }
+  state.count += 1;
+  if (candidate === 'down' || state.count >= 2) { state.cls = candidate; state.count = 0; }
+  return state.cls;
+}
+function streamHealthClass(stream, stats) {
+  if (!stream || !stream.active) return 'down';
+  const status = String(stream.status || '').toLowerCase();
+  if (/(unavailable|no signal|sin señal|lost|not found|refused|timeout|404|error|failed|fail|fallo|ошибк|сбой)/.test(status)) return 'down';
+  if (/^(starting|inici)/.test(status) && !stats.hasSignal && stats.samples < 15) return 'pending';
+  const recent = stats.avgOut > 0 ? stats.avgOut : stats.avgIn;
+  const baseline = stats.baseOut > 0 ? stats.baseOut : stats.baseIn;
+  // Amarillo unicamente si el bitrate reciente cae a menos de la mitad de su promedio.
+  if (recent > 0 && baseline > 0 && recent < baseline * 0.5) return 'warn';
+  if (stats.signalAge > 30000) return 'warn';
+  if (stats.ccAge < 20000) return 'warn';
+  return 'ok';
+}
 function updateStreamTile(tile, stream) {
   if (!tile || !stream) return;
-  tile.classList.toggle('active', !!stream.active);
+  const stats = bitrateStats(stream);
+  const candidate = streamHealthClass(stream, stats);
+  const health = resolveHealth(candidate, stream);
+  tile.classList.remove('active', 'error', 'ok', 'warn', 'down', 'pending');
+  tile.classList.add(health);
 
   const statusPill = tile.querySelector('[data-role="status-pill"]');
   if (statusPill) {
-    statusPill.className = `status-pill ${stream.active ? 'active' : 'stopped'}`;
-    statusPill.textContent = stream.active ? (stream.using_backup ? 'Backup' : 'Online') : 'Offline';
+    statusPill.className = 'status-pill ' + health;
+    const labels = { down: stream.active ? 'Sin señal' : 'Detenido', warn:'Inestable', pending:'Iniciando', ok:'En línea' };
+    statusPill.textContent = labels[health] || 'En línea';
+    statusPill.title = health === 'down' ? (stream.active ? 'La fuente no entrega datos (sin señal)' : 'Flujo detenido') : (health === 'warn' ? 'El bitrate ha caído por debajo de la mitad de su promedio' : (health === 'pending' ? 'Arrancando el flujo' : 'Flujo estable'));
   }
   const runtimeStatus = tile.querySelector('[data-role="runtime-status"]');
   if (runtimeStatus) {
     const value = String(stream.status || '').trim();
-    runtimeStatus.textContent = value;
+    runtimeStatus.textContent = translateStatus(value);
     runtimeStatus.title = value;
+    const pillText = statusPill ? statusPill.textContent : '';
+    runtimeStatus.style.display = (runtimeStatus.textContent && runtimeStatus.textContent.toLowerCase() !== String(pillText).toLowerCase()) ? '' : 'none';
   }
+
+  const bitrateMain = tile.querySelector('[data-role="bitrate-main"]');
+  const bitrateDetail = tile.querySelector('[data-role="bitrate-detail"]');
+  const main = stats.avgOut > 0 ? stats.avgOut : stats.avgIn;
+  if (bitrateMain) bitrateMain.textContent = formatBitrate(main);
+  if (bitrateDetail) bitrateDetail.textContent = 'Entrada ' + formatBitrate(stats.avgIn) + ' · Salida ' + formatBitrate(stats.avgOut);
 
   if (stream.dvb_input) {
     const available = !!stream.dvb_signal_available;
@@ -4761,12 +5376,6 @@ function updateStreamTile(tile, stream) {
     activeInput.textContent = `${stream.active_input_label || t('primary')} · ${stream.active_input_uri || stream.input_uri || '—'}`;
   }
 
-  const bitrateIn = tile.querySelector('[data-role="bitrate-in"]');
-  if (bitrateIn) bitrateIn.textContent = stream.bitrate_in_kbps ? `${stream.bitrate_in_kbps} kbps` : '—';
-
-  const bitrateOut = tile.querySelector('[data-role="bitrate-out"]');
-  if (bitrateOut) bitrateOut.textContent = stream.bitrate_out_kbps ? `${stream.bitrate_out_kbps} kbps` : '—';
-
   const caStatus = tile.querySelector('[data-role="ca-status"]');
   if (caStatus) caStatus.textContent = caStreamStatusText(stream);
 
@@ -4775,7 +5384,7 @@ function updateStreamTile(tile, stream) {
   if (decodePill) {
     decodePill.className = `decode-pill ${decodeInfo.cls}`;
     decodePill.textContent = decodeInfo.text;
-    decodePill.title = `${decodeInfo.detail}. Контроль по A/V PID, scrambling_control и валидному PES на выходе.`;
+    decodePill.title = `${decodeInfo.detail}. Control por PID A/V, scrambling_control y PES válido en la salida.`;
   }
 
   const toggleButton = tile.querySelector('[data-role="stream-toggle"]');
@@ -4791,7 +5400,7 @@ function updateLiveTiles() {
   const headerServerName = document.getElementById('headerServerName');
   const totalCount = document.getElementById('totalCount');
   const activeCount = document.getElementById('activeCount');
-  if (headerServerName) headerServerName.textContent = state.server_name || 'TVStreammerSAT5';
+  if (headerServerName) headerServerName.textContent = state.server_name || 'TVListerSat';
   if (totalCount) totalCount.textContent = state.stream_count ?? (state.streams || []).length;
   if (activeCount) activeCount.textContent = state.active_count ?? (state.streams || []).filter(stream => stream.active).length;
   const tiles = document.getElementById('tiles');
@@ -4819,16 +5428,16 @@ function render(force=false) {
     const links = streamLinks(stream);
     const primaryLink = links[0]?.url || stream.vlc_link || `${stream.output_host || ''}:${stream.output_port || ''}`;
     const tile = document.createElement('div');
-    tile.className = 'tile' + (stream.active ? ' active' : '');
+    tile.className = 'tile';
     tile.dataset.streamId = String(stream.id);
     tile.dataset.streamName = String(stream.name || stream.id);
-    tile.title = 'Двойной клик — предпросмотр';
+    tile.title = 'Doble clic — vista previa';
     tile.innerHTML = `
       <div class="top">
-        <div>
+        <div class="tile-head">
           <div class="title">${escapeHtmlValue(stream.name || stream.id)}</div>
           <div class="status-line">
-            <div data-role="status-pill" class="status-pill ${stream.active ? 'active' : 'stopped'}">${stream.active ? (stream.using_backup ? 'Backup' : 'Online') : 'Offline'}</div>
+            <span data-role="status-pill" class="status-pill">—</span>
             <span data-role="runtime-status" class="runtime-status" title="${escapeHtmlValue(stream.status || '')}">${escapeHtmlValue(stream.status || '')}</span>
           </div>
         </div>
@@ -4837,21 +5446,15 @@ function render(force=false) {
         <div class="badge">${outputs.length > 1 ? outputBadgeText(stream) : bitrateMode}</div>
         <button class="delete-button" title="${t('delete')}" aria-label="${t('delete')}" data-stream-action="delete" data-stream-id="${escapeHtmlValue(stream.id)}">×</button>
       </div>
-      <div class="dvb-meters${stream.dvb_input ? '' : ' placeholder'}" title="${stream.dvb_input ? 'DVB Signal / Quality' : ''}">
+      <div class="bitrate-main"><b data-role="bitrate-main">—</b><small data-role="bitrate-detail"></small></div>
+      <div class="dvb-meters${stream.dvb_input ? '' : ' placeholder'}" title="${stream.dvb_input ? 'Señal / calidad DVB' : ''}">
         <div class="dvb-meter"><span data-role="dvb-signal-fill" class="dvb-meter-fill"></span><b data-role="dvb-signal-label" class="dvb-meter-label">S —</b></div>
         <div class="dvb-meter"><span data-role="dvb-quality-fill" class="dvb-meter-fill"></span><b data-role="dvb-quality-label" class="dvb-meter-label">Q —</b></div>
       </div>
       <div class="info">
         <div class="info-row"><strong>${t('output')}</strong><span>${outputs.length > 1 ? outputBadgeText(stream) : outputType.toUpperCase()} · ${primaryLink}</span></div>
         <div class="info-row"><strong>${t('activeInput')}</strong><span data-role="active-input">${stream.active_input_label || t('primary')} · ${stream.active_input_uri || stream.input_uri || '—'}</span></div>
-        <div class="info-row"><strong>${t('primary')}</strong><span>${stream.input_uri || '—'}</span></div>
-        <div class="info-row"><strong>${t('backup')}</strong><span>${stream.backup_input_uri || '—'}${stream.backup_input_type === 'file' && stream.backup_file_loop ? ' · loop' : ''}</span></div>
         <div class="info-row"><strong>${t('sid')}</strong><span>${stream.service_id || '—'}</span></div>
-        ${stream.conditional_access_client ? `<div class="info-row"><strong>CA</strong><span data-role="ca-status">${caStreamStatusText(stream)}</span></div>
-        <div class="info-row decode-row"><strong>Декодирование</strong><span data-role="decode-status" class="decode-pill ${caDecodeInfo(stream).cls}" title="Контроль по A/V PID, scrambling_control и валидному PES">${caDecodeInfo(stream).text}</span></div>` : `<div class="info-row placeholder"><strong>CA</strong><span>—</span></div>
-        <div class="info-row placeholder decode-row"><strong>Декодирование</strong><span>—</span></div>`}
-        <div class="info-row"><strong>${t('bitrateIn')}</strong><span data-role="bitrate-in">${stream.bitrate_in_kbps ? stream.bitrate_in_kbps + ' kbps' : '—'}</span></div>
-        <div class="info-row"><strong>${t('bitrateOut')}</strong><span data-role="bitrate-out">${stream.bitrate_out_kbps ? stream.bitrate_out_kbps + ' kbps' : '—'}</span></div>
       </div>
       <div class="controls">
         <button data-role="stream-toggle" data-stream-action="toggle" data-stream-id="${escapeHtmlValue(stream.id)}" data-stream-active="${stream.active ? '1' : '0'}" class="${stream.active ? 'stop-button' : 'start-button'}">${stream.active ? t('stop') : t('start')}</button>
@@ -5515,21 +6118,8 @@ function openAboutModal() {
   openModal(`
     <h2>${t('about')}</h2>
     <div class="about-list">
-      <div class="about-row"><strong>${t('product')}</strong><span>TVStreammerSAT5</span></div>
-      <div class="about-row"><strong>${t('version')}</strong><span>${state.program_version||window.__TVS_VERSION||'?'}${language === 'en' ? ' EN' : ''}</span></div>
-      <div class="about-row"><strong>${t('name')}</strong><span>Лукомский Виталий</span></div>
-      <div class="about-row"><strong>${t('country')}</strong><span>Беларусь, г. Борисов</span></div>
-      <div class="about-row"><strong>${t('contactEmail')}</strong><a href="mailto:monkipnet@gmail.com">monkipnet@gmail.com</a></div>
-      <div class="about-row about-donate"><strong>${t('donate')}</strong><div class="about-donate-content">
-        <svg class="about-qr" viewBox="0 0 41 41" role="img" aria-label="${t('donateQr')}" shape-rendering="crispEdges">
-          <rect width="41" height="41" fill="#fff"></rect>
-          <path d="${donateQrPath}" fill="#111"></path>
-        </svg>
-        <div class="about-donate-wallet">
-          <span class="about-donate-wallet-label">${t('donateWallet')}</span>
-          <span class="about-donate-address">${donateAddress}</span>
-        </div>
-      </div></div>
+      <div class="about-row"><strong>${t('name')}</strong><span>TVListerSat</span></div>
+      <div class="about-row"><strong>${t('version')}</strong><span>1.2</span></div>
     </div>
     <div class="modal-actions">
       <button class="button-primary" onclick="closeModal()">${t('close')}</button>
