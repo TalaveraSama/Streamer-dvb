@@ -9,6 +9,7 @@
 #include "OscamMiniManager.h"
 #include "protocols/GstProtocolTypes.h"
 #include "HttpOriginPolicy.h"
+#include "GlibcCompat.h"
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
